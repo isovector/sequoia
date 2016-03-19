@@ -61,11 +61,11 @@ run cfg scene = do
             continue <- runSignal app i >>= run''
             when continue . run' $ i + 1
 
-        run'' (s, (w, h)) = undefined
+        run'' = uncurry $ render e
     run' 0
     SDL.quit
 
-render :: Engine -> [Prop a] -> (Int, Int) -> IO ()
+render :: Engine -> [Prop a] -> (Int, Int) -> IO Bool
 render e@(Engine { .. }) ps size@(w, h) =
     alloca $ \pixelsptr ->
     alloca $ \pitchptr  -> do
@@ -97,6 +97,8 @@ render e@(Engine { .. }) ps size@(w, h) =
         SDL.destroyTexture texture
         SDL.renderPresent renderer
 
+        return True
+
 render' :: [Prop a] -> (Int, Int) -> Cairo.Render ()
 render' ps size = do
     Cairo.setSourceRGB 0 0 0
@@ -113,15 +115,20 @@ renderProp (BakedProp _ f) = mapM_ renderForm f
 
 renderForm :: Form -> Cairo.Render ()
 renderForm (Form fs s) = do
-    Cairo.newPath
     case s of
       Rectangle { .. } -> do
-          withUnpacked shapeCentre Cairo.moveTo
+          let (w, h) = rectSize
+          unpackFor shapeCentre Cairo.rectangle w h
 
---     setFillStyle style
+    setFillStyle fs
 
-withUnpacked :: Pos -> (Double -> Double -> a) -> a
-withUnpacked p f = uncurry f $ unpackPos p
+setFillStyle :: FillStyle -> Cairo.Render ()
+setFillStyle (Solid (Color r g b a)) = do
+    Cairo.setSourceRGBA r g b a
+    Cairo.fill
+
+unpackFor :: Pos -> (Double -> Double -> a) -> a
+unpackFor p f = uncurry f $ unpackPos p
 
 quitRequested :: Signal Bool
 quitRequested = liftIO SDL.quitRequested

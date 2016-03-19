@@ -97,7 +97,7 @@ render e@(Engine { .. }) ps size@(w, h) =
         SDL.destroyTexture texture
         SDL.renderPresent renderer
 
-        return True
+        not <$> SDL.quitRequested
 
 render' :: [Prop a] -> (Int, Int) -> Cairo.Render ()
 render' ps size = do
@@ -129,7 +129,4 @@ setFillStyle (Solid (Color r g b a)) = do
 
 unpackFor :: Pos -> (Double -> Double -> a) -> a
 unpackFor p f = uncurry f $ unpackPos p
-
-quitRequested :: Signal Bool
-quitRequested = liftIO SDL.quitRequested
 

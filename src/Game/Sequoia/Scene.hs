@@ -8,14 +8,11 @@ module Game.Sequoia.Scene
     , scale
     , rect
     , filled
-    , sweepLine
-    , center
     ) where
 
-import Control.Monad (join, guard, liftM2)
+import Control.Monad (join, guard)
 import Data.SG.Geometry.TwoDim
 import Data.SG.Shape
-import Data.Maybe (isJust, fromJust)
 import Game.Sequoia.Types
 import Game.Sequoia.Utils
 
@@ -61,34 +58,4 @@ rect pos w h = Rectangle pos $ mapT (/2) (w, h)
 
 filled :: Color -> Shape -> Prop' a
 filled c = ShapeProp Nothing . Form (Solid c)
-
-getShapes :: Prop' a -> [(Prop' a, Shape)]
-getShapes   (GroupProp ps)   = join $ map getShapes ps
-getShapes p@(ShapeProp _ f)  = return $ (p, getShape f)
-getShapes p@(BakedProp _ fs) = zip (repeat p) $ map getShape fs
-
-getShape :: Form -> Shape
-getShape (Form _ s) = s
-
-between :: Ord a => a -> a -> a -> Bool
-between a b x = a <= x && x <= b
-
-center :: Prop' a -> Pos
-center (ShapeProp _ (Form _ s)) = shapeCentre s
--- TODO(sandy): do this better
-center _ = error "you can't get the center of NOTHING"
-
-sweepLine :: [Prop' a] -> Pos -> Rel -> [Prop' a]
-sweepLine ps pos rel =
-    let line = Line2 pos rel
-        shapes = join $ map getShapes ps
-     in do
-            (p, s) <- shapes
-            let mayIntersect = intersectLineShape line s
-            guard $ isJust mayIntersect
-            let intersect = fromJust mayIntersect
-                p1 = fst intersect
-                p2 = snd intersect
-            guard $ between 0 1 p1 || between 0 1 p2
-            return p
 

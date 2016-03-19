@@ -31,6 +31,7 @@ library
                        Game.Sequoia.Engine,
                        Game.Sequoia.Window,
                        Game.Sequoia.Keyboard,
+                       Game.Sequoia.Geometry,
                        Game.Sequoia.Utils,
                        Game.Sequoia.Time,
                        Game.Sequoia

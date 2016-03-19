@@ -7,6 +7,7 @@ module Game.Sequoia
     ( EngineConfig (..)
     , run
     , module Control.Applicative
+    , module Game.Sequoia.Geometry
     , module Game.Sequoia.Scene
     , module Game.Sequoia.Signal
     , module Game.Sequoia.Time
@@ -24,6 +25,7 @@ import Foreign.Marshal.Alloc (alloca)
 import Foreign.Ptr (nullPtr, castPtr)
 import Foreign.Storable (peek)
 import Game.Sequoia.Engine
+import Game.Sequoia.Geometry
 import Game.Sequoia.Scene
 import Game.Sequoia.Signal
 import Game.Sequoia.Time

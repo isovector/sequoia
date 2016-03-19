@@ -30,6 +30,7 @@ library
                        Game.Sequoia.Color,
                        Game.Sequoia.Engine,
                        Game.Sequoia.Window,
+                       Game.Sequoia.Keyboard,
                        Game.Sequoia.Utils,
                        Game.Sequoia.Time,
                        Game.Sequoia

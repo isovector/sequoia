@@ -10,8 +10,11 @@ module Game.Sequoia.Types
     , unpackPos
     , origin
     , mkRel
+    , scaleRel
+    , plusDir
     ) where
 
+import Data.SG.Geometry
 import Data.SG.Geometry.TwoDim
 import Data.SG.Shape
 import Game.Sequoia.Color

@@ -22,7 +22,7 @@ liftWindow :: (SDL.Window -> Ptr CInt -> Ptr CInt -> IO ())
            -> Signal (Int, Int)
 liftWindow f = engine >>= lifted
   where
-    lifted e = liftIO $
+    lifted e = liftIO .
         alloca $ \wptr ->
         alloca $ \hptr -> do
             f (window e) wptr hptr

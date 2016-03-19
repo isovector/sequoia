@@ -8,19 +8,20 @@ module Game.Sequoia
     , run
     ) where
 
-import Foreign.Marshal.Alloc (alloca)
-import Foreign.Storable (peek)
-import System.Endian (fromBE32)
 import Control.Monad (when)
-import Control.Monad.State (evalStateT)
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.State (evalStateT)
 import Data.Bits ((.|.))
+import Data.SG.Shape
 import Foreign.C.String (withCAString)
+import Foreign.Marshal.Alloc (alloca)
 import Foreign.Ptr (nullPtr, castPtr)
+import Foreign.Storable (peek)
 import Game.Sequoia.Engine
 import Game.Sequoia.Signal
 import Game.Sequoia.Types
 import Game.Sequoia.Utils
+import System.Endian (fromBE32)
 import qualified Data.Map as M
 import qualified Game.Sequoia.Window as Window
 import qualified Graphics.Rendering.Cairo as Cairo
@@ -48,7 +49,6 @@ startup (EngineConfig { .. }) = withCAString windowTitle $ \title -> do
     renderer <- SDL.createRenderer window (-1) rflags
     return Engine { window   = window
                   , renderer = renderer
-                  , cache    = M.empty
                   , continue = True
                   }
 
@@ -65,8 +65,8 @@ run cfg scene = do
     run' 0
     SDL.quit
 
-render :: Engine -> [Prop a] -> (Int, Int) -> IO Engine
-render e@(Engine { .. }) ps (w, h) =
+render :: Engine -> [Prop a] -> (Int, Int) -> IO ()
+render e@(Engine { .. }) ps size@(w, h) =
     alloca $ \pixelsptr ->
     alloca $ \pitchptr  -> do
         format <- SDL.masksToPixelFormatEnum 32 (fromBE32 0x0000ff00)
@@ -83,24 +83,45 @@ render e@(Engine { .. }) ps (w, h) =
         SDL.lockTexture texture nullPtr pixelsptr pitchptr
         pixels <- peek pixelsptr
         pitch  <- fromIntegral <$> peek pitchptr
-        res    <-
-            Cairo.withImageSurfaceForData
-                (castPtr pixels)
-                Cairo.FormatARGB32
-                (fromIntegral w)
-                (fromIntegral h)
-                pitch $ \surface ->
-                    Cairo.renderWith surface .
-                        flip evalStateT e $ render' w h ps
+        Cairo.withImageSurfaceForData
+            (castPtr pixels)
+            Cairo.FormatARGB32
+            (fromIntegral w)
+            (fromIntegral h)
+            pitch
+            $ \surface ->
+                Cairo.renderWith surface $ render' ps size
         SDL.unlockTexture texture
         SDL.renderClear renderer
         SDL.renderCopy renderer texture nullPtr nullPtr
         SDL.destroyTexture texture
         SDL.renderPresent renderer
-        return res
 
-render' = undefined
+render' :: [Prop a] -> (Int, Int) -> Cairo.Render ()
+render' ps size = do
+    Cairo.setSourceRGB 0 0 0
+    uncurry (Cairo.rectangle 0 0) $ mapT fromIntegral size
+    Cairo.fill
 
+    mapM_ renderProp ps
+    return ()
+
+renderProp :: Prop a -> Cairo.Render ()
+renderProp (GroupProp f)   = mapM_ renderProp f
+renderProp (ShapeProp _ f) = renderForm f
+renderProp (BakedProp _ f) = mapM_ renderForm f
+
+renderForm :: Form -> Cairo.Render ()
+renderForm (Form fs s) = do
+    Cairo.newPath
+    case s of
+      Rectangle { .. } -> do
+          withUnpacked shapeCentre Cairo.moveTo
+
+--     setFillStyle style
+
+withUnpacked :: Pos -> (Double -> Double -> a) -> a
+withUnpacked p f = uncurry f $ unpackPos p
 
 quitRequested :: Signal Bool
 quitRequested = liftIO SDL.quitRequested

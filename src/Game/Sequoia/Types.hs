@@ -7,6 +7,7 @@ module Game.Sequoia.Types
     , Prop (..)
     , Color (..)
     , mkPos
+    , unpackPos
     , origin
     ) where
 
@@ -28,6 +29,9 @@ data Prop a = ShapeProp (Maybe a)  Form
 
 mkPos :: Double -> Double -> Pos
 mkPos x y = Point2 (x, y)
+
+unpackPos :: Pos -> (Double, Double)
+unpackPos (Point2 pos) = pos
 
 origin :: Pos
 origin = mkPos 0 0

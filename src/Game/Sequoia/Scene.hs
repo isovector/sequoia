@@ -57,3 +57,4 @@ rect w h = Rectangle origin (w, h)
 
 filled :: Color -> Shape -> Form
 filled = Form . Solid
+

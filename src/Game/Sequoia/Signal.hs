@@ -19,6 +19,7 @@ module Game.Sequoia.Signal
 
 import Control.Monad (ap, liftM2, when, forM_)
 import Control.Applicative ((<$>), (<*>))
+import Control.Monad.IO.Class
 import Data.IORef (IORef (..), newIORef, readIORef, writeIORef, modifyIORef)
 import Data.Traversable (sequenceA)
 import System.IO.Unsafe (unsafePerformIO)
@@ -38,6 +39,9 @@ instance Monad Signal where
     Signal sa >>= f = Signal $ \i -> do
         a <- sa i
         runSignal (f a) i
+
+instance MonadIO Signal where
+    liftIO = Signal . const
 
 sampleAt :: Int -> Signal a -> IO a
 sampleAt = flip runSignal

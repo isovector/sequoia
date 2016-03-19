@@ -19,7 +19,11 @@ library
   exposed-modules:     Game.Sequoia.Signal,
                        Game.Sequoia.Scene,
                        Game.Sequoia.Types,
-                       Game.Sequoia.Color
+                       Game.Sequoia.Color,
+                       Game.Sequoia.Engine,
+                       Game.Sequoia.Window,
+                       Game.Sequoia.Utils,
+                       Game.Sequoia
 
   -- other-modules:
   -- other-extensions:
@@ -29,6 +33,9 @@ library
                        random,
                        mtl,
                        transformers,
-                       SG
+                       SG,
+                       containers,
+                       sdl2,
+                       cairo
   hs-source-dirs:      src
   default-language:    Haskell2010

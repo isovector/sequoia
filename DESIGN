@@ -1,0 +1,5 @@
+Prop a = (Maybe a, ...)
+tag :: a -> Prop a -> Prop a
+sweepLine :: Scene -> Pos -> Rel -> [Prop a]
+getTag :: Prop a -> Maybe a
+bake :: [Prop a] -> Prop a

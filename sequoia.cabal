@@ -16,7 +16,11 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Game.Sequoia.Signal
+  exposed-modules:     Game.Sequoia.Signal,
+                       Game.Sequoia.Scene,
+                       Game.Sequoia.Types,
+                       Game.Sequoia.Color
+
   -- other-modules:
   -- other-extensions:
   build-depends:       base >=4.8 && <4.9,

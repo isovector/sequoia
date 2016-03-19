@@ -1,5 +1,20 @@
 Prop a = (Maybe a, ...)
 tag :: a -> Prop a -> Prop a
 sweepLine :: Scene -> Pos -> Rel -> [Prop a]
+sweepProp :: Scene -> Prop a -> Rel -> [Prop a]
 getTag :: Prop a -> Maybe a
+
 bake :: [Prop a] -> Prop a
+
+-- are these different things?
+scene :: [Prop a] -> Scene a
+group :: [Prop a] -> Prop a
+
+rotate :: Double -> Prop a -> Prop a
+move :: Rel2 -> Prop a -> Prop a
+scale :: Double -> Prop a -> Prop a
+
+rect :: Double -> Double -> Prop a
+cirlce :: Double -> Prop a
+-- oval :: Double -> Prop a
+polygon :: [Vec2] -> Prop a

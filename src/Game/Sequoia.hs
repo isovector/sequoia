@@ -6,8 +6,14 @@
 module Game.Sequoia
     ( EngineConfig (..)
     , run
+    , module Control.Applicative
+    , module Game.Sequoia.Scene
+    , module Game.Sequoia.Signal
+    , module Game.Sequoia.Time
+    , module Game.Sequoia.Types
     ) where
 
+import Control.Applicative
 import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (evalStateT)
@@ -18,7 +24,9 @@ import Foreign.Marshal.Alloc (alloca)
 import Foreign.Ptr (nullPtr, castPtr)
 import Foreign.Storable (peek)
 import Game.Sequoia.Engine
+import Game.Sequoia.Scene
 import Game.Sequoia.Signal
+import Game.Sequoia.Time
 import Game.Sequoia.Types
 import Game.Sequoia.Utils
 import System.Endian (fromBE32)

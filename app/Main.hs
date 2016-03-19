@@ -2,10 +2,6 @@ module Main where
 
 import Game.Sequoia
 import Game.Sequoia.Color
-import Game.Sequoia.Scene
-import Game.Sequoia.Signal
-import Game.Sequoia.Time
-import Game.Sequoia.Types
 
 config = EngineConfig
     { windowDimensions = (640, 480)

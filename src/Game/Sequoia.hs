@@ -15,7 +15,7 @@ module Game.Sequoia
     ) where
 
 import Control.Applicative
-import Control.Monad (when)
+import Control.Monad (when, forM_)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (evalStateT)
 import Data.Bits ((.|.))
@@ -130,6 +130,12 @@ renderForm (Form fs s) = do
           let (w, h)   = mapT (*2) rectSize
               (x, y) = unpackPos shapeCentre
           Cairo.rectangle (x - w/2) (y - h/2) w h
+
+      Polygon { .. } -> do
+          Cairo.newPath
+          forM_ polyPoints $ \rel -> do
+              let pos = plusDir shapeCentre rel
+              unpackFor pos Cairo.lineTo
 
     setFillStyle fs
 

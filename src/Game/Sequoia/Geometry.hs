@@ -52,6 +52,7 @@ overlapping ps c =
            -- TODO(sandy): we can do a quick BB test instead of this fanout
            (p, s)  <- shapes
            (_, cs) <- cshapes
+           -- TODO(sandy): overlap seems to think triangles are rects
            guard . isJust $ overlap s cs
            return p
 
@@ -62,7 +63,8 @@ sweepProp ps p rel =
 
 tryMove :: [Prop' a] -> Prop' a -> Rel -> Prop' a
 tryMove ps p rel =
-    if null $ sweepProp ps p rel
+    -- TODO(sandy): make this a prop sweep once triangles aren't rects
+    if null $ sweepLine ps (center p) rel
        then move rel p
        else p
 

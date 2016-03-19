@@ -7,6 +7,7 @@ module Game.Sequoia.Scene
     , rotate
     , scale
     , rect
+    , polygon
     , filled
     ) where
 
@@ -55,6 +56,9 @@ liftShape t (Form fs s) = Form fs $ t s
 
 rect :: Pos -> Double -> Double -> Shape
 rect pos w h = Rectangle pos $ mapT (/2) (w, h)
+
+polygon :: Pos -> [Rel] -> Shape
+polygon = Polygon
 
 filled :: Color -> Shape -> Prop' a
 filled c = ShapeProp Nothing . Form (Solid c)

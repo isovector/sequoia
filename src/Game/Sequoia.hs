@@ -60,7 +60,7 @@ startup (EngineConfig { .. }) = withCAString windowTitle $ \title -> do
                   , continue = True
                   }
 
-run :: EngineConfig -> Signal [Prop a] -> IO ()
+run :: EngineConfig -> Signal [Prop' a] -> IO ()
 run cfg scene = do
     e <- startup cfg
     mail' engineAddr e
@@ -73,7 +73,7 @@ run cfg scene = do
     run' 0
     SDL.quit
 
-render :: Engine -> [Prop a] -> (Int, Int) -> IO Bool
+render :: Engine -> [Prop' a] -> (Int, Int) -> IO Bool
 render e@(Engine { .. }) ps size@(w, h) =
     alloca $ \pixelsptr ->
     alloca $ \pitchptr  -> do
@@ -107,7 +107,7 @@ render e@(Engine { .. }) ps size@(w, h) =
 
         not <$> SDL.quitRequested
 
-render' :: [Prop a] -> (Int, Int) -> Cairo.Render ()
+render' :: [Prop' a] -> (Int, Int) -> Cairo.Render ()
 render' ps size = do
     Cairo.setSourceRGB 0 0 0
     uncurry (Cairo.rectangle 0 0) $ mapT fromIntegral size
@@ -116,7 +116,7 @@ render' ps size = do
     mapM_ renderProp ps
     return ()
 
-renderProp :: Prop a -> Cairo.Render ()
+renderProp :: Prop' a -> Cairo.Render ()
 renderProp (GroupProp f)   = mapM_ renderProp f
 renderProp (ShapeProp _ f) = renderForm f
 renderProp (BakedProp _ f) = mapM_ renderForm f

@@ -4,7 +4,7 @@ module Game.Sequoia.Types
     , Shape
     , FillStyle (..)
     , Form (..)
-    , Prop (..)
+    , Prop' (..)
     , Color (..)
     , mkPos
     , unpackPos
@@ -24,9 +24,9 @@ data FillStyle = Solid Color
 
 data Form = Form FillStyle Shape
 
-data Prop a = ShapeProp (Maybe a)  Form
-            | BakedProp (Maybe a) [Form]
-            | GroupProp [Prop a]
+data Prop' a = ShapeProp (Maybe a)  Form
+             | BakedProp (Maybe a) [Form]
+             | GroupProp [Prop' a]
 
 mkPos :: Double -> Double -> Pos
 mkPos x y = Point2 (x, y)

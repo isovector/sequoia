@@ -9,6 +9,7 @@ module Game.Sequoia.Types
     , mkPos
     , unpackPos
     , origin
+    , mkRel
     ) where
 
 import Data.SG.Geometry.TwoDim
@@ -29,6 +30,9 @@ data Prop a = ShapeProp (Maybe a)  Form
 
 mkPos :: Double -> Double -> Pos
 mkPos x y = Point2 (x, y)
+
+mkRel :: Double -> Double -> Rel
+mkRel x y = makeRel2 (x, y)
 
 unpackPos :: Pos -> (Double, Double)
 unpackPos (Point2 pos) = pos

@@ -55,6 +55,6 @@ liftShape t (Form fs s) = Form fs $ t s
 rect :: Double -> Double -> Shape
 rect w h = Rectangle origin (w, h)
 
-filled :: Color -> Shape -> Form
-filled = Form . Solid
+filled :: Color -> Shape -> Prop a
+filled c = ShapeProp Nothing . Form (Solid c)
 

@@ -11,7 +11,7 @@ config = EngineConfig
 type Prop = Prop' ()
 
 movement :: Signal Prop
-movement = foldp update (filled red $ rect 20 20) elapsed
+movement = foldp update (filled red $ rect origin 20 20) elapsed
   where
     update dt p = move (mkRel (300 * dt) (300 * dt)) p
 

@@ -14,6 +14,7 @@ import Control.Monad (join)
 import Data.SG.Geometry.TwoDim
 import Data.SG.Shape
 import Game.Sequoia.Types
+import Game.Sequoia.Utils
 
 group :: [Prop' a] -> Prop' a
 group = GroupProp
@@ -52,8 +53,8 @@ transform t (BakedProp a f) = BakedProp a $ map t f
 liftShape :: (Shape -> Shape) -> Form -> Form
 liftShape t (Form fs s) = Form fs $ t s
 
-rect :: Double -> Double -> Shape
-rect w h = Rectangle origin (w, h)
+rect :: Pos -> Double -> Double -> Shape
+rect pos w h = Rectangle pos $ mapT (/2) (w, h)
 
 filled :: Color -> Shape -> Prop' a
 filled c = ShapeProp Nothing . Form (Solid c)

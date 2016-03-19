@@ -125,7 +125,7 @@ renderForm :: Form -> Cairo.Render ()
 renderForm (Form fs s) = do
     case s of
       Rectangle { .. } -> do
-          let (w, h) = rectSize
+          let (w, h) = mapT (*2) rectSize
           unpackFor shapeCentre Cairo.rectangle w h
 
     setFillStyle fs

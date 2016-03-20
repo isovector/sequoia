@@ -30,8 +30,8 @@ data FillStyle = Solid Color
 data Form = Form FillStyle Shape
     deriving (Show, Eq)
 
-data Prop' a = ShapeProp (Maybe a)  Form
-             | BakedProp (Maybe a) [Form]
+data Prop' a = ShapeProp a  Form
+             | BakedProp a [Form]
              | GroupProp [Prop' a]
              deriving (Show, Eq)
 

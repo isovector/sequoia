@@ -2,6 +2,7 @@ module Game.Sequoia.Scene
     ( group
     , bake
     , ungroup
+    , tags
     , tag
     , getTag
     , move
@@ -15,6 +16,7 @@ module Game.Sequoia.Scene
     ) where
 
 import Control.Monad (join, guard)
+import Data.Default (Default (), def)
 import Data.SG.Geometry.TwoDim
 import Data.SG.Shape
 import Game.Sequoia.Color (rgba)
@@ -24,18 +26,21 @@ import Game.Sequoia.Utils
 group :: [Prop' a] -> Prop' a
 group = GroupProp
 
-tag :: a -> Prop' a -> Prop' a
-tag a (GroupProp ps)   = GroupProp $ map (tag a) ps
-tag a (ShapeProp _ f)  = ShapeProp (Just a) f
-tag a (BakedProp _ fs) = BakedProp (Just a) fs
+tags :: (a -> a) -> Prop' a -> Prop' a
+tags t (GroupProp ps)   = GroupProp $ map (tags t) ps
+tags t (ShapeProp a f)  = ShapeProp (t a) f
+tags t (BakedProp a fs) = BakedProp (t a) fs
 
-getTag :: Prop' a -> Maybe a
-getTag (GroupProp _)   = Nothing
+tag :: a -> Prop' a -> Prop' a
+tag = tags . const
+
+getTag :: Default a => Prop' a -> a
+getTag (GroupProp _)   = def
 getTag (ShapeProp a _) = a
 getTag (BakedProp a _) = a
 
-bake :: [Prop' a] -> Prop' a
-bake ps = BakedProp Nothing . join $ map getForms ps
+bake :: Default a => [Prop' a] -> Prop' a
+bake ps = BakedProp def . join $ map getForms ps
   where
     getForms (GroupProp ps)   = join $ map getForms ps
     getForms (ShapeProp _ f)  = return f
@@ -77,9 +82,9 @@ rect pos w h = Rectangle pos $ mapT (/2) (w, h)
 polygon :: Pos -> [Rel] -> Shape
 polygon = Polygon
 
-filled :: Color -> Shape -> Prop' a
-filled c = ShapeProp Nothing . Form (Solid c)
+filled :: Default a => Color -> Shape -> Prop' a
+filled c = ShapeProp def . Form (Solid c)
 
-invisible :: Shape -> Prop' a
+invisible :: Default a => Shape -> Prop' a
 invisible = filled (rgba 0 0 0 0)
 

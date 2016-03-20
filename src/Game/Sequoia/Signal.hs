@@ -8,6 +8,8 @@ module Game.Sequoia.Signal
     , effectful
     , mailbox
     , mailboxs
+    , newMailbox
+    , newMailboxs
     , mail
     , mail'
     , delay
@@ -73,6 +75,14 @@ mailboxs f a = do
 
 mailbox :: a -> IO (Signal a, Address a)
 mailbox = mailboxs (flip const)
+
+{-# NOINLINE newMailboxs #-}
+newMailboxs :: (a -> a -> a) -> a -> (Signal a, Address a)
+newMailboxs f = unsafePerformIO . mailboxs f
+
+{-# NOINLINE newMailbox #-}
+newMailbox :: a -> (Signal a, Address a)
+newMailbox = unsafePerformIO . mailbox
 
 mail :: Address a -> a -> Signal ()
 mail addr a = Signal $ \i -> runMailbox addr (i + 1) a

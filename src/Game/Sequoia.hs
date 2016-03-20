@@ -50,6 +50,7 @@ data EngineConfig = EngineConfig {
   windowTitle :: String
 }
 
+{-# NOINLINE mailing #-}
 mailing :: Address a -> a -> b -> b
 mailing addr a b = unsafePerformIO $ do
     now <- readIORef globalTime

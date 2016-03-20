@@ -5,6 +5,7 @@ module Game.Sequoia.Signal
     , signal
     , effectful
     , mailbox
+    , mailboxs
     , mail
     , mail'
     , delay
@@ -46,14 +47,18 @@ instance MonadIO Signal where
 sampleAt :: Int -> Signal a -> IO a
 sampleAt = flip runSignal
 
-mailbox :: a -> IO (Signal a, Address a)
-mailbox a = do
+mailboxs :: (a -> a -> a) -> a -> IO (Signal a, Address a)
+mailboxs f a = do
     ref <- newIORef [(0, a)]
     return ( Signal $ \i -> do
                 times <- readIORef ref
                 return . snd . head $ dropWhile ((> i) . fst) times
-           , Address $ \i a -> modifyIORef ref ((i, a) :)
+           , Address $ \i a -> modifyIORef ref $
+               \contents -> (i, f (snd $ head contents) a) : contents
            )
+
+mailbox :: a -> IO (Signal a, Address a)
+mailbox = mailboxs const
 
 mail :: Address a -> a -> Signal ()
 mail addr a = Signal $ \i -> runMailbox addr (i + 1) a

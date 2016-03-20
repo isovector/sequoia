@@ -6,6 +6,7 @@ module Game.Sequoia.Scene
     , move
     , rotate
     , scale
+    , teleport
     , rect
     , polygon
     , filled
@@ -45,6 +46,11 @@ rotate = transform . liftShape . rotateShape
 
 scale :: Double -> Prop' a -> Prop' a
 scale = transform . liftShape . scaleShape
+
+teleport :: Pos -> Prop' a -> Prop' a
+teleport = transform . liftShape . teleportShape
+  where
+    teleportShape p s = s { shapeCentre = p }
 
 transform :: (Form -> Form) -> Prop' a -> Prop' a
 transform t (GroupProp ps)  = GroupProp   $ map (transform t) ps

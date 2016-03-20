@@ -25,6 +25,7 @@ executable sequoia
 
 library
   exposed-modules:     Game.Sequoia.Signal,
+                       Game.Sequoia.Combinators,
                        Game.Sequoia.Scene,
                        Game.Sequoia.Types,
                        Game.Sequoia.Color,

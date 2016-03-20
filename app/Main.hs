@@ -18,7 +18,7 @@ addr :: Address Int
 (sig, addr) = unsafePerformIO $ mailboxs (+) 0
 
 movement :: Signal Prop
-movement = foldp update (filled red $ circle origin 10) $
+movement = foldp update (filled red $ rect origin 10 10) $
     (,,) <$> elapsed <*> KB.arrows <*> sig
   where
     update (dt, dir, v) p = mailing addr 1
@@ -28,10 +28,7 @@ movement = foldp update (filled red $ circle origin 10) $
 otherBlock :: [Prop]
 otherBlock = return
            . traced yellow
-           $ polygon (mkPos (-200) 100) [ mkRel 0 (-40)
-                                        , mkRel 20 40
-                                        , mkRel (-20) 40
-                                        ]
+           $ rect (mkPos (-200) 100) 40 80
 
 mainSig :: Signal [Prop]
 mainSig = (: otherBlock) <$> movement

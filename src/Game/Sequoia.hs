@@ -163,6 +163,7 @@ renderProp (BakedProp _ f) = mapM_ renderForm f
 
 renderForm :: Form -> Cairo.Render ()
 renderForm (Form (Style mfs mls) s) = do
+    Cairo.newPath
     case s of
       Rectangle { .. } -> do
           let (w, h) = mapT (*2) rectSize
@@ -170,7 +171,6 @@ renderForm (Form (Style mfs mls) s) = do
           Cairo.rectangle (x - w/2) (y - h/2) w h
 
       Polygon { .. } -> do
-          Cairo.newPath
           forM_ polyPoints $ \rel -> do
               let pos = plusDir shapeCentre rel
               unpackFor pos Cairo.lineTo

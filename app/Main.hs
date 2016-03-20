@@ -1,7 +1,9 @@
 module Main where
 
+import Debug.Trace
 import Game.Sequoia
 import Game.Sequoia.Color
+import System.IO.Unsafe (unsafePerformIO)
 import qualified Game.Sequoia.Keyboard as KB
 
 config = EngineConfig
@@ -11,11 +13,17 @@ config = EngineConfig
 
 type Prop = Prop' ()
 
+sig :: Signal Int
+addr :: Address Int
+(sig, addr) = unsafePerformIO $ mailboxs (+) 0
+
 movement :: Signal Prop
 movement = foldp update (filled red $ rect origin 20 20) $
-    (,) <$> elapsed <*> KB.arrows
+    (,,) <$> elapsed <*> KB.arrows <*> sig
   where
-    update (dt, dir) p = tryMove otherBlock p . scaleRel dt $ dir * 300
+    update (dt, dir, v) p = mailing addr 1
+                          . tryMove otherBlock p
+                          . scaleRel dt $ (trace (show v) dir) * 300
 
 otherBlock :: [Prop]
 otherBlock = return

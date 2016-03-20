@@ -6,6 +6,7 @@
 module Game.Sequoia
     ( EngineConfig (..)
     , run
+    , mailing
     , module Control.Applicative
     , module Game.Sequoia.Geometry
     , module Game.Sequoia.Scene
@@ -32,10 +33,15 @@ import Game.Sequoia.Time
 import Game.Sequoia.Types
 import Game.Sequoia.Utils
 import System.Endian (fromBE32)
+import Data.IORef (IORef, newIORef, writeIORef, readIORef)
+import System.IO.Unsafe (unsafePerformIO)
 import qualified Data.Map as M
 import qualified Game.Sequoia.Window as Window
 import qualified Graphics.Rendering.Cairo as Cairo
 import qualified Graphics.UI.SDL as SDL
+
+globalTime :: IORef Int
+globalTime = unsafePerformIO $ newIORef 0
 
 data EngineConfig = EngineConfig {
   windowDimensions :: (Int, Int),
@@ -43,6 +49,12 @@ data EngineConfig = EngineConfig {
   -- windowIsResizable :: Bool,
   windowTitle :: String
 }
+
+mailing :: Address a -> a -> b -> b
+mailing addr a b = unsafePerformIO $ do
+    now <- readIORef globalTime
+    sampleAt now $ mail addr a
+    return b
 
 startup :: EngineConfig -> IO Engine
 startup (EngineConfig { .. }) = withCAString windowTitle $ \title -> do
@@ -68,6 +80,7 @@ run cfg scene = do
     mail' engineAddr e
     let app = (,) <$> scene <*> Window.dimensions
         run' i = do
+            writeIORef globalTime i
             continue <- runSignal app i >>= run''
             when continue . run' $ i + 1
 

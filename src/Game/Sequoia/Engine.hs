@@ -17,5 +17,7 @@ data Engine = Engine
 
 engine     :: Signal Engine
 engineAddr :: Address Engine
-(engine, engineAddr) = unsafePerformIO $ mailbox undefined
+(engine, engineAddr) = unsafePerformIO
+                     . mailbox
+                     $ error "undefined engine, somehow =("
 

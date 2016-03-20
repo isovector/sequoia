@@ -18,7 +18,7 @@ addr :: Address Int
 (sig, addr) = unsafePerformIO $ mailboxs (+) 0
 
 movement :: Signal Prop
-movement = foldp update (filled red $ rect origin 20 20) $
+movement = foldp update (filled red $ circle origin 10) $
     (,,) <$> elapsed <*> KB.arrows <*> sig
   where
     update (dt, dir, v) p = mailing addr 1
@@ -39,7 +39,5 @@ mainSig = (: otherBlock) <$> movement
 space :: Signal Bool
 space = KB.keyPress KB.SpaceKey
 
-main = run config . effectful $ \i -> do
-    runSignal space i >>= print
-    runSignal mainSig i
+main = run config mainSig
 

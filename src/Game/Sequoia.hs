@@ -165,7 +165,7 @@ renderForm :: Form -> Cairo.Render ()
 renderForm (Form fs s) = do
     case s of
       Rectangle { .. } -> do
-          let (w, h)   = mapT (*2) rectSize
+          let (w, h) = mapT (*2) rectSize
               (x, y) = unpackPos shapeCentre
           Cairo.rectangle (x - w/2) (y - h/2) w h
 
@@ -174,6 +174,9 @@ renderForm (Form fs s) = do
           forM_ polyPoints $ \rel -> do
               let pos = plusDir shapeCentre rel
               unpackFor pos Cairo.lineTo
+
+      Circle { .. } -> do
+          unpackFor shapeCentre Cairo.arc circSize 0 (pi * 2)
 
     setFillStyle fs
 

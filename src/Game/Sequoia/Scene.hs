@@ -11,6 +11,7 @@ module Game.Sequoia.Scene
     , teleport
     , rect
     , polygon
+    , circle
     , filled
     , invisible
     ) where
@@ -81,6 +82,9 @@ rect pos w h = Rectangle pos $ mapT (/2) (w, h)
 
 polygon :: Pos -> [Rel] -> Shape
 polygon = Polygon
+
+circle :: Pos -> Double -> Shape
+circle = Circle
 
 filled :: Default a => Color -> Shape -> Prop' a
 filled c = ShapeProp def . Form (Solid c)

@@ -1,6 +1,7 @@
 module Game.Sequoia.Scene
     ( group
     , bake
+    , ungroup
     , tag
     , getTag
     , move
@@ -39,6 +40,14 @@ bake ps = BakedProp Nothing . join $ map getForms ps
     getForms (GroupProp ps)   = join $ map getForms ps
     getForms (ShapeProp _ f)  = return f
     getForms (BakedProp _ fs) = fs
+
+-- |Groups don't have tags, so some algorithms might go pear-shaped if you
+-- don't ungroup the scene first.
+ungroup :: [Prop' a] -> [Prop' a]
+ungroup = join . map ungroup'
+  where
+    ungroup' (GroupProp ps) = ungroup ps
+    ungroup' a = return a
 
 move :: Rel -> Prop' a -> Prop' a
 move = transform . liftShape . moveShape

@@ -58,7 +58,7 @@ mailboxs f a = do
            )
 
 mailbox :: a -> IO (Signal a, Address a)
-mailbox = mailboxs const
+mailbox = mailboxs (flip const)
 
 mail :: Address a -> a -> Signal ()
 mail addr a = Signal $ \i -> runMailbox addr (i + 1) a

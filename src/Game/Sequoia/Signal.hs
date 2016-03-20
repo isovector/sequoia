@@ -1,7 +1,9 @@
 module Game.Sequoia.Signal
     ( Signal(..)
+    , Edge (..)
     , Address()
-    -- * Composing
+    , value
+    , changed
     , signal
     , effectful
     , mailbox
@@ -13,9 +15,9 @@ module Game.Sequoia.Signal
     , sampleAt
     , (<$>)
     , (<*>)
-    -- * Accumulating
     , foldp
-    , countIf
+    , edges
+    , edges'
     ) where
 
 import Control.Monad (ap, liftM2, when, forM_)
@@ -43,6 +45,18 @@ instance Monad Signal where
 
 instance MonadIO Signal where
     liftIO = Signal . const
+
+data Edge a = Changed a
+            | Unchanged a
+            deriving (Eq, Show)
+
+value :: Edge a -> a
+value (Changed a)   = a
+value (Unchanged a) = a
+
+changed :: Edge a -> Bool
+changed (Changed _) = True
+changed _           = False
 
 sampleAt :: Int -> Signal a -> IO a
 sampleAt = flip runSignal
@@ -102,6 +116,16 @@ foldp f s sa = unsafePerformIO $ do
         latestf (i, newval)
         update i mlatest (time + 1) newval
 
-countIf :: (a -> Bool) -> Signal a -> Signal Int
-countIf f = foldp (\v c -> c + fromEnum (f v)) 0
+edges' :: (a -> a -> Bool) -> Signal a -> Signal (Edge a)
+edges' f sa = Signal $ \i -> do
+    new <- runSignal sa i
+    if i == 0
+       then return $ Changed new
+       else do
+           -- TODO(sandy): egregiously bad behavior over foldp
+           old <- runSignal sa (i - 1)
+           return $ (if f old new then Unchanged else Changed) new
+
+edges :: Eq a => Signal a -> Signal (Edge a)
+edges = edges' (==)
 

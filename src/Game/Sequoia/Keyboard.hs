@@ -755,6 +755,9 @@ instance Enum Key where
     toEnum 284 = App2Key
     toEnum _ = error "Game.Sequoia.Keyboard.Key.toEnum: bad argument"
 
+keyPress :: Key -> Signal Bool
+keyPress k = (Changed True ==) <$> (edges $ isDown k)
+
 isDown :: Key -> Signal Bool
 isDown k = elem k <$> keysDown
 

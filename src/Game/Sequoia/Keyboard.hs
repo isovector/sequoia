@@ -15,6 +15,7 @@ import Control.Monad.IO.Class (liftIO)
 import Data.List (elemIndices)
 import Foreign hiding (shift)
 import Foreign.C.Types (CInt)
+import Game.Sequoia
 import Game.Sequoia.Signal
 import Game.Sequoia.Types
 import Game.Sequoia.Utils
@@ -757,7 +758,7 @@ instance Enum Key where
     toEnum _ = error "Game.Sequoia.Keyboard.Key.toEnum: bad argument"
 
 keyPress :: Key -> Signal Bool
-keyPress k = (Changed True ==) <$> (edges $ isDown k)
+keyPress k = (Changed True ==) <$> (edges . amnesia False $ isDown k)
 
 isDown :: Key -> Signal Bool
 isDown k = elem k <$> keysDown

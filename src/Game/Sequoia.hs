@@ -7,6 +7,7 @@ module Game.Sequoia
     ( EngineConfig (..)
     , run
     , mailing
+    , amnesia
     , module Control.Applicative
     , module Game.Sequoia.Geometry
     , module Game.Sequoia.Scene
@@ -56,6 +57,27 @@ mailing addr a b = unsafePerformIO $ do
     now <- readIORef globalTime
     sampleAt now $ mail addr a
     return b
+
+{-# NOINLINE amnesia #-}
+-- |A signal which remembers only one sample in the past. Highly unsafe to
+-- reminisce about, as you might imagine.
+amnesia :: a -> Signal a -> Signal a
+amnesia a sa = unsafePerformIO $ do
+    current <- newIORef a
+    last    <- newIORef a
+    sample  <- newIORef 0
+
+    return . Signal $ \i -> do
+        now <- readIORef globalTime
+        ago <- readIORef sample
+        when (now /= ago) $ do
+            readIORef current >>= writeIORef last
+            runSignal sa now >>=  writeIORef current
+            writeIORef sample now
+        case now - i of
+          0 -> readIORef current
+          1 -> readIORef last
+          _ -> return a
 
 startup :: EngineConfig -> IO Engine
 startup (EngineConfig { .. }) = withCAString windowTitle $ \title -> do

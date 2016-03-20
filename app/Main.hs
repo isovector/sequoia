@@ -23,7 +23,7 @@ movement = foldp update (filled red $ rect origin 20 20) $
   where
     update (dt, dir, v) p = mailing addr 1
                           . tryMove otherBlock p
-                          . scaleRel dt $ (trace (show v) dir) * 300
+                          . scaleRel dt $ dir * 300
 
 otherBlock :: [Prop]
 otherBlock = return
@@ -36,5 +36,10 @@ otherBlock = return
 mainSig :: Signal [Prop]
 mainSig = (: otherBlock) <$> movement
 
-main = run config mainSig
+space :: Signal Bool
+space = KB.keyPress KB.SpaceKey
+
+main = run config . effectful $ \i -> do
+    runSignal space i >>= print
+    runSignal mainSig i
 

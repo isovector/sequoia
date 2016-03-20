@@ -12,7 +12,7 @@ config = EngineConfig
 type Prop = Prop' ()
 
 movement :: Signal Prop
-movement = foldp update (filled red $ rect (mkPos 150 100) 20 20) $
+movement = foldp update (filled red $ rect origin 20 20) $
     (,) <$> elapsed <*> KB.arrows
   where
     update (dt, dir) p = tryMove otherBlock p . scaleRel dt $ dir * 300
@@ -20,10 +20,10 @@ movement = foldp update (filled red $ rect (mkPos 150 100) 20 20) $
 otherBlock :: [Prop]
 otherBlock = return
            . filled violet
-           $ polygon (mkPos 300 200) [ mkRel 0 (-40)
-                                     , mkRel 20 40
-                                     , mkRel (-20) 40
-                                     ]
+           $ polygon (mkPos (-200) 100) [ mkRel 0 (-40)
+                                        , mkRel 20 40
+                                        , mkRel (-20) 40
+                                        ]
 
 mainSig :: Signal [Prop]
 mainSig = (: otherBlock) <$> movement

@@ -115,8 +115,10 @@ render' ps size = do
     uncurry (Cairo.rectangle 0 0) $ mapT fromIntegral size
     Cairo.fill
 
+    Cairo.save
+    uncurry Cairo.translate $ mapT ((/ 2) . fromIntegral) size
     mapM_ renderProp ps
-    return ()
+    Cairo.restore
 
 renderProp :: Prop' a -> Cairo.Render ()
 renderProp (GroupProp f)   = mapM_ renderProp f

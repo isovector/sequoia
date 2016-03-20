@@ -10,11 +10,13 @@ module Game.Sequoia.Scene
     , rect
     , polygon
     , filled
+    , invisible
     ) where
 
 import Control.Monad (join, guard)
 import Data.SG.Geometry.TwoDim
 import Data.SG.Shape
+import Game.Sequoia.Color (rgba)
 import Game.Sequoia.Types
 import Game.Sequoia.Utils
 
@@ -68,4 +70,7 @@ polygon = Polygon
 
 filled :: Color -> Shape -> Prop' a
 filled c = ShapeProp Nothing . Form (Solid c)
+
+invisible :: Shape -> Prop' a
+invisible = filled (rgba 0 0 0 0)
 

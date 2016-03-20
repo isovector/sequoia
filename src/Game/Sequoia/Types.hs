@@ -2,10 +2,15 @@ module Game.Sequoia.Types
     ( Pos
     , Rel
     , Shape
-    , FillStyle (..)
     , Form (..)
     , Prop' (..)
     , Color (..)
+    , FillStyle (..)
+    , LineCap (..)
+    , LineJoin (..)
+    , LineStyle (..)
+    , Style (..)
+    , defaultLine
     , mkPos
     , unpackPos
     , origin
@@ -24,10 +29,42 @@ type Pos = Point2' Double
 type Rel = Rel2' Double
 type Shape = Shape' Double
 
+data LineCap = FlatCap
+             | RoundCap
+             | PaddedCap
+             deriving (Show, Eq, Enum, Ord, Read)
+
+data LineJoin = SmoothJoin
+              | SharpJoin Double
+              | ClippedJoin
+              deriving (Show, Eq, Ord, Read)
+
+data LineStyle = LineStyle
+    { lineColor      :: Color
+    , lineWidth      :: Double
+    , lineCap        :: LineCap
+    , lineJoin       :: LineJoin
+    , lineDashing    :: [Double]
+    , lineDashOffset :: Double
+    } deriving (Show, Eq)
+
+defaultLine :: LineStyle
+defaultLine = LineStyle
+    { lineColor = black
+    , lineWidth = 1
+    , lineCap = FlatCap
+    , lineJoin = SharpJoin 10
+    , lineDashing = []
+    , lineDashOffset = 0
+    }
+
 data FillStyle = Solid Color
     deriving (Show, Eq)
 
-data Form = Form FillStyle Shape
+data Style = Style (Maybe FillStyle) (Maybe LineStyle)
+    deriving (Show, Eq)
+
+data Form = Form Style Shape
     deriving (Show, Eq)
 
 data Prop' a = ShapeProp a  Form

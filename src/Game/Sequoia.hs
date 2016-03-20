@@ -162,7 +162,7 @@ renderProp (ShapeProp _ f) = renderForm f
 renderProp (BakedProp _ f) = mapM_ renderForm f
 
 renderForm :: Form -> Cairo.Render ()
-renderForm (Form fs s) = do
+renderForm (Form (Style mfs mls) s) = do
     case s of
       Rectangle { .. } -> do
           let (w, h) = mapT (*2) rectSize
@@ -174,17 +174,45 @@ renderForm (Form fs s) = do
           forM_ polyPoints $ \rel -> do
               let pos = plusDir shapeCentre rel
               unpackFor pos Cairo.lineTo
+          Cairo.closePath
 
       Circle { .. } -> do
           unpackFor shapeCentre Cairo.arc circSize 0 (pi * 2)
+    mapM_ setFillStyle mfs
+    mapM_ setLineStyle mls
 
-    setFillStyle fs
+setLineStyle :: LineStyle -> Cairo.Render ()
+setLineStyle (LineStyle { .. }) = do
+    unpackColFor lineColor Cairo.setSourceRGBA
+    setLineCap
+    setLineJoin
+    Cairo.setLineWidth lineWidth
+    Cairo.setDash lineDashing lineDashOffset
+    Cairo.strokePreserve
+  where
+    setLineCap = Cairo.setLineCap $
+        case lineCap of
+          FlatCap   -> Cairo.LineCapButt
+          RoundCap  -> Cairo.LineCapRound
+          PaddedCap -> Cairo.LineCapSquare
+    setLineJoin =
+        case lineJoin of
+          SmoothJoin    -> Cairo.setLineJoin Cairo.LineJoinRound
+          SharpJoin lim -> Cairo.setLineJoin Cairo.LineJoinMiter
+                        >> Cairo.setMiterLimit lim
+          ClippedJoin   -> Cairo.setLineJoin Cairo.LineJoinBevel
+
 
 setFillStyle :: FillStyle -> Cairo.Render ()
-setFillStyle (Solid (Color r g b a)) = do
-    Cairo.setSourceRGBA r g b a
-    Cairo.fill
+setFillStyle (Solid col) = do
+    unpackColFor col Cairo.setSourceRGBA
+    Cairo.fillPreserve
 
 unpackFor :: Pos -> (Double -> Double -> a) -> a
 unpackFor p f = uncurry f $ unpackPos p
+
+unpackColFor :: Color
+             -> (Double -> Double ->  Double -> Double -> a)
+             -> a
+unpackColFor (Color r g b a) f = f r g b a
 

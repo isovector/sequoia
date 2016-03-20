@@ -14,6 +14,8 @@ module Game.Sequoia.Scene
     , circle
     , filled
     , invisible
+    , styled
+    , traced
     ) where
 
 import Control.Monad (join, guard)
@@ -86,9 +88,21 @@ polygon = Polygon
 circle :: Pos -> Double -> Shape
 circle = Circle
 
+toShape :: Default a => Maybe FillStyle -> Maybe LineStyle -> Shape -> Prop' a
+toShape fs ls = ShapeProp def . Form (Style fs ls)
+
 filled :: Default a => Color -> Shape -> Prop' a
-filled c = ShapeProp def . Form (Solid c)
+filled c = toShape (Just $ Solid c) Nothing
 
 invisible :: Default a => Shape -> Prop' a
-invisible = filled (rgba 0 0 0 0)
+invisible = toShape Nothing Nothing
+
+styled :: Default a => Color -> LineStyle -> Shape -> Prop' a
+styled c ls = toShape (Just $ Solid c) (Just ls)
+
+traced :: Default a => Color -> Shape -> Prop' a
+traced c = toShape Nothing
+                   (Just $ defaultLine { lineColor = c
+                                       , lineDashing = [8, 4]
+                                       } )
 

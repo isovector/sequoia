@@ -27,7 +27,7 @@ movement = foldp update (filled red $ circle origin 10) $
 
 otherBlock :: [Prop]
 otherBlock = return
-           . filled violet
+           . traced yellow
            $ polygon (mkPos (-200) 100) [ mkRel 0 (-40)
                                         , mkRel 20 40
                                         , mkRel (-20) 40

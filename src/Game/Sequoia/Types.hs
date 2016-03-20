@@ -12,6 +12,7 @@ module Game.Sequoia.Types
     , mkRel
     , scaleRel
     , plusDir
+    , posDif
     ) where
 
 import Data.SG.Geometry
@@ -45,4 +46,7 @@ unpackPos (Point2 pos) = pos
 
 origin :: Pos
 origin = mkPos 0 0
+
+posDif :: Pos -> Pos -> Rel
+posDif = fromPt
 

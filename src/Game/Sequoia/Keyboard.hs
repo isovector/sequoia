@@ -271,7 +271,7 @@ data Key = AKey
          | SleepKey
          | App1Key
          | App2Key
-         deriving (Show, Eq, Ord, Read)
+         deriving (Show, Eq, Ord, Read, Bounded)
 
 instance Enum Key where
     fromEnum AKey = 4
@@ -758,13 +758,13 @@ instance Enum Key where
     toEnum _ = error "Game.Sequoia.Keyboard.Key.toEnum: bad argument"
 
 keyPress :: Key -> Signal Bool
-keyPress k = (Changed True ==) <$> (edges . amnesia False $ isDown k)
+keyPress k = (Changed True ==) <$> (edges $ isDown k)
 
 isDown :: Key -> Signal Bool
 isDown k = elem k <$> keysDown
 
 keysDown :: Signal [Key]
-keysDown = liftIO $ map toEnum <$> getKeyState
+keysDown = amnesia [] . liftIO $ map toEnum <$> getKeyState
 
 arrows, wasd :: Signal Rel
 arrows = liftArrows UpKey LeftKey DownKey RightKey

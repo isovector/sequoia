@@ -5,6 +5,7 @@ module Game.Sequoia.Keyboard
     ( Key(..)
     , isDown
     , keysDown
+    , keyPress
     , arrows
     , wasd
     ) where

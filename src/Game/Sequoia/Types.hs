@@ -18,11 +18,17 @@ module Game.Sequoia.Types
     , scaleRel
     , plusDir
     , posDif
+    , mag
+    , magSq
+    , dot
+    , normalize
+    , distance
     ) where
 
 import Data.SG.Geometry
 import Data.SG.Geometry.TwoDim
 import Data.SG.Shape
+import Data.SG.Vector
 import Game.Sequoia.Color
 
 type Pos = Point2' Double
@@ -81,9 +87,15 @@ mkRel x y = makeRel2 (x, y)
 unpackPos :: Pos -> (Double, Double)
 unpackPos (Point2 pos) = pos
 
-origin :: Pos
-origin = mkPos 0 0
-
 posDif :: Pos -> Pos -> Rel
 posDif = fromPt
+
+normalize :: Rel -> Rel
+normalize = unitVector
+
+distance :: Pos -> Pos -> Double
+distance = distFrom
+
+dot :: Rel -> Rel -> Double
+dot = dotProduct
 

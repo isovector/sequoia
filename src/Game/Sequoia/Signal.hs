@@ -17,6 +17,7 @@ module Game.Sequoia.Signal
     , sampleAt
     , (<$>)
     , (<*>)
+    , countIf
     , foldp
     , edges
     , edges'
@@ -104,6 +105,9 @@ delay a d (Signal f) = Signal $ \i -> do
 
 constant :: a -> Signal a
 constant = pure
+
+countIf :: (a -> Bool) -> Signal a -> Signal Int
+countIf f = foldp ((+) . fromEnum . f) 0
 
 {-# NOINLINE foldp #-}
 foldp :: (a -> b-> b) -> b -> Signal a -> Signal b

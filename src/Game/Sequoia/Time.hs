@@ -1,6 +1,7 @@
 module Game.Sequoia.Time
     ( Time
     , elapsed
+    , time
     ) where
 
 import Control.Applicative ((<$>))
@@ -16,6 +17,11 @@ elapsed = fmap (uncurry (-)) . unsafePerformIO $ do
     start <- getTime
     return . foldp update (start, start) $ liftIO getTime
   where
-    getTime = realToFrac <$> getPOSIXTime
     update new (old, _) = (new, old)
+
+time :: Signal Time
+time = liftIO getTime
+
+getTime :: IO Time
+getTime = realToFrac <$> getPOSIXTime
 

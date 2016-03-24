@@ -52,10 +52,10 @@ data EngineConfig = EngineConfig {
 }
 
 {-# NOINLINE mailing #-}
-mailing :: Address a -> a -> b -> b
-mailing addr a b = unsafePerformIO $ do
+mailing :: Address a -> (a -> a) -> b -> b
+mailing addr f b = unsafePerformIO $ do
     now <- readIORef globalTime
-    sampleAt now $ mail addr a
+    sampleAt now $ mail addr f
     return b
 
 {-# NOINLINE amnesia #-}
@@ -100,7 +100,7 @@ startup (EngineConfig { .. }) = withCAString windowTitle $ \title -> do
 run :: EngineConfig -> Signal [Prop' a] -> IO ()
 run cfg scene = do
     e <- startup cfg
-    mail' engineAddr e
+    mail' engineAddr $ const e
     let app = (,) <$> scene <*> Window.dimensions
         run' i = do
             writeIORef globalTime i

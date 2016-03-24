@@ -7,9 +7,7 @@ module Game.Sequoia.Signal
     , signal
     , effectful
     , mailbox
-    , mailboxs
     , newMailbox
-    , newMailboxs
     , mail
     , mail'
     , delay
@@ -31,7 +29,7 @@ import Data.Traversable (sequenceA)
 import System.IO.Unsafe (unsafePerformIO)
 
 newtype Signal a = Signal { runSignal :: Int -> IO a }
-newtype Address a = Address { runMailbox :: Int -> a -> IO () }
+newtype Address a = Address { runMailbox :: Int -> (a -> a) -> IO () }
 
 instance Functor Signal where
     fmap f = Signal . fmap (fmap f) . runSignal
@@ -64,31 +62,24 @@ changed _           = False
 sampleAt :: Int -> Signal a -> IO a
 sampleAt = flip runSignal
 
-mailboxs :: (a -> a -> a) -> a -> IO (Signal a, Address a)
-mailboxs f a = do
+mailbox :: a -> IO (Signal a, Address a)
+mailbox a = do
     ref <- newIORef [(0, a)]
     return ( Signal $ \i -> do
                 times <- readIORef ref
                 return . snd . head $ dropWhile ((> i) . fst) times
-           , Address $ \i a -> modifyIORef ref $
-               \contents -> (i, f (snd $ head contents) a) : contents
+           , Address $ \i f -> modifyIORef ref $
+               \contents -> (i, f . snd $ head contents) : contents
            )
-
-mailbox :: a -> IO (Signal a, Address a)
-mailbox = mailboxs (flip const)
-
-{-# NOINLINE newMailboxs #-}
-newMailboxs :: String -> (a -> a -> a) -> a -> (Signal a, Address a)
-newMailboxs _ f a = unsafePerformIO $ mailboxs f a
 
 {-# NOINLINE newMailbox #-}
 newMailbox :: String -> a -> (Signal a, Address a)
 newMailbox _ a = unsafePerformIO $ mailbox a
 
-mail :: Address a -> a -> Signal ()
-mail addr a = Signal $ \i -> runMailbox addr (i + 1) a
+mail :: Address a -> (a -> a) -> Signal ()
+mail addr f = Signal $ \i -> runMailbox addr (i + 1) f
 
-mail' :: Address a -> a -> IO ()
+mail' :: Address a -> (a -> a) -> IO ()
 mail' = flip runMailbox 0
 
 signal :: (Int -> a) -> Signal a

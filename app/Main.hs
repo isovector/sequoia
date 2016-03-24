@@ -36,8 +36,5 @@ mainSig = (: otherBlock) <$> movement
 space :: Signal Bool
 space = KB.keyPress KB.SpaceKey
 
-main = do
-    mail' addrA 5
-    (putStrLn . show) =<< runSignal sigB 0
-    -- run config mainSig
+main = run config mainSig
 

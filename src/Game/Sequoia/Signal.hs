@@ -78,12 +78,12 @@ mailbox :: a -> IO (Signal a, Address a)
 mailbox = mailboxs (flip const)
 
 {-# NOINLINE newMailboxs #-}
-newMailboxs :: (a -> a -> a) -> a -> (Signal a, Address a)
-newMailboxs f a = unsafePerformIO $ mailboxs f a
+newMailboxs :: String -> (a -> a -> a) -> a -> (Signal a, Address a)
+newMailboxs _ f a = unsafePerformIO $ mailboxs f a
 
 {-# NOINLINE newMailbox #-}
-newMailbox :: a -> (Signal a, Address a)
-newMailbox a = unsafePerformIO $ mailbox a
+newMailbox :: String -> a -> (Signal a, Address a)
+newMailbox _ a = unsafePerformIO $ mailbox a
 
 mail :: Address a -> a -> Signal ()
 mail addr a = Signal $ \i -> runMailbox addr (i + 1) a

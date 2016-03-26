@@ -61,10 +61,16 @@ sweepProp ps p rel =
     let pos = center p
      in sweepLine ps pos rel ++ overlapping ps (move rel p)
 
-tryMove :: [Prop' a] -> Prop' a -> Rel -> Prop' a
-tryMove ps p rel =
-    -- TODO(sandy): make this a prop sweep once triangles aren't rects
-    if null $ sweepLine ps (center p) rel
-       then move rel p
-       else p
+tryMove :: [Prop' a] -> [Prop' a] -> Prop' a -> Rel -> Prop' a
+tryMove walls floors p rel =
+    let pos = center p
+        -- TODO(sandy): make this a real sweep
+        hitWalls = sweepLine walls pos rel
+        hitFloors = sweepProp floors p rel
+        inClear = null hitWalls
+        onFloor = null floors || not (null hitFloors)
+        canMove = inClear && onFloor
+     in if canMove
+           then move rel p
+           else p
 

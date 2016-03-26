@@ -17,8 +17,11 @@ movement :: Signal Prop
 movement = foldp update (filled red $ rect origin 10 10) $
     (,) <$> elapsed <*> KB.arrows
   where
-    update (dt, dir) p = tryMove otherBlock p
+    update (dt, dir) p = tryMove otherBlock theFloor p
                        . scaleRel dt $ dir * 300
+
+theFloor :: [Prop]
+theFloor = return . traced white $ rect origin 400 400
 
 otherBlock :: [Prop]
 otherBlock = return

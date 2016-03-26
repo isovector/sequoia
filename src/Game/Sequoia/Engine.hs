@@ -15,9 +15,9 @@ data Engine = Engine
     , continue :: Bool
     }
 
+{-# NOINLINE engine #-}
+{-# NOINLINE engineAddr #-}
 engine     :: Signal Engine
 engineAddr :: Address Engine
-(engine, engineAddr) = unsafePerformIO
-                     . mailbox
-                     $ error "undefined engine, somehow =("
+(engine, engineAddr) = newMailbox "engine" $ error "undefined engine, somehow"
 

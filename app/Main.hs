@@ -1,8 +1,10 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Main where
 
 import Debug.Trace
 import Game.Sequoia
 import Game.Sequoia.Color
+import Game.Sequoia.Stanza
 import System.IO.Unsafe (unsafePerformIO)
 import qualified Game.Sequoia.Keyboard as KB
 
@@ -28,13 +30,20 @@ otherBlock = return
            . traced yellow
            $ rect (mkPos (-200) 100) 40 80
 
+stanz :: [Prop]
+stanz = return
+      . StanzaProp
+      . monospace
+      . color red
+      $ toStanza "hello sequoia"
+
 sigA :: Signal Int
 sigB :: Signal Int
 (sigA, addrA) = newMailbox "a" 0
 (sigB, addrB) = newMailbox "b" 0
 
 mainSig :: Signal [Prop]
-mainSig = (: otherBlock) <$> movement
+mainSig = (: stanz ++ otherBlock) <$> movement
 
 space :: Signal Bool
 space = KB.keyPress KB.SpaceKey

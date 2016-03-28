@@ -24,6 +24,7 @@ executable sequoia
   default-language:    Haskell2010
 
 library
+  ghc-options:         -fwarn-incomplete-patterns
   exposed-modules:     Game.Sequoia.Signal,
                        Game.Sequoia.Combinators,
                        Game.Sequoia.Scene,
@@ -33,6 +34,7 @@ library
                        Game.Sequoia.Window,
                        Game.Sequoia.Keyboard,
                        Game.Sequoia.Geometry,
+                       Game.Sequoia.Stanza,
                        Game.Sequoia.Utils,
                        Game.Sequoia.Time,
                        Game.Sequoia
@@ -49,6 +51,7 @@ library
                        containers,
                        sdl2,
                        cairo,
+                       pango,
                        cpu,
                        data-default
   hs-source-dirs:      src

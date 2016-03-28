@@ -58,23 +58,31 @@ ungroup = join . map ungroup'
     ungroup' a = return a
 
 move :: Rel -> Prop' a -> Prop' a
-move = transform . liftShape . moveShape
+move rel = transform (liftShape $ moveShape rel) moveStanza
+  where
+    moveStanza s = s { stanzaCentre = plusDir (stanzaCentre s) rel }
 
 rotate :: Double -> Prop' a -> Prop' a
-rotate = transform . liftShape . rotateShape
+rotate theta = transform (liftShape $ rotateShape theta)
+             -- TODO(sandy): we can support this in drawing code
+             $ error "unable to rotate stanza"
 
 scale :: Double -> Prop' a -> Prop' a
-scale = transform . liftShape . scaleShape
+scale s = transform (liftShape $ scaleShape s)
+        -- TODO(sandy): we can support this in drawing code
+        $ error "unable to scale stanza"
 
 teleport :: Pos -> Prop' a -> Prop' a
-teleport = transform . liftShape . teleportShape
+teleport pos = transform (liftShape $ teleportShape pos) teleportStanza
   where
-    teleportShape p s = s { shapeCentre = p }
+    teleportShape p s  = s { shapeCentre  = p }
+    teleportStanza s   = s { stanzaCentre = pos }
 
-transform :: (Form -> Form) -> Prop' a -> Prop' a
-transform t (GroupProp ps)  = GroupProp   $ map (transform t) ps
-transform t (ShapeProp a f) = ShapeProp a $ t f
-transform t (BakedProp a f) = BakedProp a $ map t f
+transform :: (Form -> Form) -> (Stanza -> Stanza) -> Prop' a -> Prop' a
+transform t u (GroupProp ps)  = GroupProp   $ map (transform t u) ps
+transform t _ (ShapeProp a f) = ShapeProp a $ t f
+transform t _ (BakedProp a f) = BakedProp a $ map t f
+transform _ t (StanzaProp s)  = StanzaProp  $ t s
 
 liftShape :: (Shape -> Shape) -> Form -> Form
 liftShape t (Form fs s) = Form fs $ t s

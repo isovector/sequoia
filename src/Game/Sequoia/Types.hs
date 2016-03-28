@@ -33,6 +33,7 @@ import Data.SG.Geometry.TwoDim
 import Data.SG.Shape
 import Data.SG.Vector
 import Game.Sequoia.Color
+import Data.Text (Text)
 
 type Pos = Point2' Double
 type Rel = Rel2' Double
@@ -78,12 +79,13 @@ data FontStyle = NormalStyle
                deriving (Show, Eq, Ord, Enum, Read)
 
 data Stanza = Stanza
-    { stanzaUTF8     :: String
+    { stanzaUTF8     :: Text
     , stanzaColor    :: Color
-    , stanzaTypeface :: String
+    , stanzaTypeface :: Text
     , stanzaHeight   :: Double
     , stanzaWeight   :: FontWeight
     , stanzaStyle    :: FontStyle
+    , stanzaCentre   :: Pos
     } deriving (Show, Eq)
 
 data FillStyle = Solid Color
@@ -98,6 +100,7 @@ data Form = Form Style Shape
 data Prop' a = ShapeProp a  Form
              | BakedProp a [Form]
              | GroupProp [Prop' a]
+             | StanzaProp Stanza
              deriving (Show, Eq)
 
 mkPos :: Double -> Double -> Pos

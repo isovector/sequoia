@@ -21,6 +21,7 @@ import Control.Monad (when, forM_)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (evalStateT)
 import Data.Bits ((.|.))
+import Data.IORef (IORef, newIORef, writeIORef, readIORef)
 import Data.SG.Shape
 import Foreign.C.String (withCAString)
 import Foreign.Marshal.Alloc (alloca)
@@ -34,11 +35,12 @@ import Game.Sequoia.Time
 import Game.Sequoia.Types
 import Game.Sequoia.Utils
 import System.Endian (fromBE32)
-import Data.IORef (IORef, newIORef, writeIORef, readIORef)
 import System.IO.Unsafe (unsafePerformIO)
 import qualified Data.Map as M
+import qualified Data.Text as T
 import qualified Game.Sequoia.Window as Window
 import qualified Graphics.Rendering.Cairo as Cairo
+import qualified Graphics.Rendering.Pango as Pango
 import qualified Graphics.UI.SDL as SDL
 
 globalTime :: IORef Int
@@ -160,6 +162,41 @@ renderProp :: Prop' a -> Cairo.Render ()
 renderProp (GroupProp f)   = mapM_ renderProp f
 renderProp (ShapeProp _ f) = renderForm f
 renderProp (BakedProp _ f) = mapM_ renderForm f
+renderProp (StanzaProp s) = renderStanza s
+
+renderStanza :: Stanza -> Cairo.Render ()
+renderStanza (Stanza { .. }) = do
+    layout <- Pango.createLayout stanzaUTF8
+
+    Cairo.liftIO
+        $ Pango.layoutSetAttributes layout
+        [ Pango.AttrFamily { paStart = i, paEnd = j, paFamily = stanzaTypeface }
+        , Pango.AttrWeight { paStart = i, paEnd = j, paWeight = mapFontWeight stanzaWeight }
+        , Pango.AttrStyle  { paStart = i, paEnd = j, paStyle = mapFontStyle stanzaStyle }
+        , Pango.AttrSize   { paStart = i, paEnd = j, paSize = stanzaHeight }
+        ]
+
+    Pango.PangoRectangle x y w h <- fmap snd . Cairo.liftIO
+                                             $ Pango.layoutGetExtents layout
+
+    unpackFor stanzaCentre Cairo.moveTo
+    Cairo.relMoveTo (-w / 2) (-h / 2)
+    unpackColFor stanzaColor Cairo.setSourceRGBA
+    Pango.showLayout layout
+
+  where
+    i = 0
+    j = T.length stanzaUTF8
+    mapFontWeight weight =
+        case weight of
+          LightWeight  -> Pango.WeightLight
+          NormalWeight -> Pango.WeightNormal
+          BoldWeight   -> Pango.WeightBold
+    mapFontStyle style =
+        case style of
+          NormalStyle  -> Pango.StyleNormal
+          ObliqueStyle -> Pango.StyleOblique
+          ItalicStyle  -> Pango.StyleItalic
 
 renderForm :: Form -> Cairo.Render ()
 renderForm (Form (Style mfs mls) s) = do

@@ -18,6 +18,7 @@ getShapes :: Prop' a -> [(Prop' a, Shape)]
 getShapes   (GroupProp ps)   = join $ map getShapes ps
 getShapes p@(ShapeProp _ f)  = return $ (p, getShape f)
 getShapes p@(BakedProp _ fs) = zip (repeat p) $ map getShape fs
+getShapes (StanzaProp _)     = []
 
 getShape :: Form -> Shape
 getShape (Form _ s) = s
@@ -27,7 +28,7 @@ between a b x = a <= x && x <= b
 
 center :: Prop' a -> Pos
 center (ShapeProp _ (Form _ s)) = shapeCentre s
--- TODO(sandy): do this better
+-- TODO(sandy): do better than this
 center _ = error "you can't get the center of NOTHING"
 
 sweepLine :: [Prop' a] -> Pos -> Rel -> [Prop' a]

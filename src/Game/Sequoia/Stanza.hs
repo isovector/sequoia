@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Game.Sequoia.Stanza
     ( bold
     , color
@@ -11,20 +12,22 @@ module Game.Sequoia.Stanza
     , typeface
     ) where
 
+import Data.Text (Text)
 import Game.Sequoia.Color
 import Game.Sequoia.Types
 
 defaultStanza :: Stanza
-defaultStanza = Stanza {
-  stanzaUTF8 = "",
-  stanzaColor = black,
-  stanzaTypeface = "sans-serif",
-  stanzaHeight = 14,
-  stanzaWeight = NormalWeight,
-  stanzaStyle = NormalStyle
-}
+defaultStanza = Stanza
+    { stanzaUTF8 = ""
+    , stanzaColor = black
+    , stanzaTypeface = "sans-serif"
+    , stanzaHeight = 14
+    , stanzaWeight = NormalWeight
+    , stanzaStyle = NormalStyle
+    , stanzaCentre = origin
+    }
 
-toStanza :: String -> Stanza
+toStanza :: Text -> Stanza
 toStanza utf8 = defaultStanza { stanzaUTF8 = utf8 }
 
 bold :: Stanza -> Stanza
@@ -45,7 +48,7 @@ color col txt = txt { stanzaColor = col }
 monospace :: Stanza -> Stanza
 monospace txt = txt { stanzaTypeface = "monospace" }
 
-typeface :: String -> Stanza -> Stanza
+typeface :: Text -> Stanza -> Stanza
 typeface face txt = txt { stanzaTypeface = face }
 
 height :: Double -> Stanza -> Stanza

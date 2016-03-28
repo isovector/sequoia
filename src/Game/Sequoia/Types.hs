@@ -10,6 +10,9 @@ module Game.Sequoia.Types
     , LineJoin (..)
     , LineStyle (..)
     , Style (..)
+    , FontStyle (..)
+    , FontWeight (..)
+    , Stanza (..)
     , defaultLine
     , mkPos
     , unpackPos
@@ -63,6 +66,25 @@ defaultLine = LineStyle
     , lineDashing = []
     , lineDashOffset = 0
     }
+
+data FontWeight = LightWeight
+                | NormalWeight
+                | BoldWeight
+                deriving (Show, Eq, Ord, Enum, Read)
+
+data FontStyle = NormalStyle
+               | ObliqueStyle
+               | ItalicStyle
+               deriving (Show, Eq, Ord, Enum, Read)
+
+data Stanza = Stanza
+    { stanzaUTF8     :: String
+    , stanzaColor    :: Color
+    , stanzaTypeface :: String
+    , stanzaHeight   :: Double
+    , stanzaWeight   :: FontWeight
+    , stanzaStyle    :: FontStyle
+    } deriving (Show, Eq)
 
 data FillStyle = Solid Color
     deriving (Show, Eq)

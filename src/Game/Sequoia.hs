@@ -6,7 +6,6 @@
 module Game.Sequoia
     ( EngineConfig (..)
     , run
-    , mailing
     , amnesia
     , module Control.Applicative
     , module Game.Sequoia.Geometry
@@ -52,13 +51,6 @@ data EngineConfig = EngineConfig {
   -- windowIsResizable :: Bool,
   windowTitle :: String
 }
-
-{-# NOINLINE mailing #-}
-mailing :: Address a -> (a -> a) -> b -> b
-mailing addr f b = unsafePerformIO $ do
-    now <- readIORef globalTime
-    sampleAt now $ mail addr f
-    return b
 
 {-# NOINLINE amnesia #-}
 -- |A signal which remembers only one sample in the past. Highly unsafe to

@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 module Game.Sequoia.Signal
     ( Signal(..)
     , Edge (..)
@@ -17,14 +18,16 @@ module Game.Sequoia.Signal
     , (<*>)
     , countIf
     , foldp
+    , foldmp
     , edges
     , edges'
     ) where
 
-import Control.Monad (ap, liftM2, when, forM_)
 import Control.Applicative ((<$>), (<*>))
+import Control.Arrow (first)
+import Control.Monad (ap, liftM2, when, forM_)
 import Control.Monad.IO.Class
-import Data.IORef (IORef (..), newIORef, readIORef, writeIORef, modifyIORef)
+import Data.IORef
 import Data.Traversable (sequenceA)
 import System.IO.Unsafe (unsafePerformIO)
 
@@ -97,29 +100,42 @@ delay a d (Signal f) = Signal $ \i -> do
 constant :: a -> Signal a
 constant = pure
 
-countIf :: (a -> Bool) -> Signal a -> Signal Int
+countIf :: Eq a => (a -> Bool) -> Signal a -> Signal Int
 countIf f = foldp ((+) . fromEnum . f) 0
 
 {-# NOINLINE foldp #-}
-foldp :: (a -> b-> b) -> b -> Signal a -> Signal b
-foldp f s sa = unsafePerformIO $ do
-    latest <- newIORef (0, s)
-    return . Signal $ \i -> do
-        (time, val) <- readIORef latest
-        case compare i time of
-            GT -> update i (Just latest) time val
-            LT -> update i Nothing 0 s
-            EQ -> return val
+foldp :: Eq b => (a -> b-> b) -> b -> Signal a -> Signal b
+foldp f s sa = fst . foldmp s $ \b -> sa >>= (return . flip f b)
+
+{-# NOINLINE foldmp #-}
+-- TODO(sandy): this is less well tested than I might want
+foldmp :: Eq a => a -> (a -> Signal a) -> (Signal a, Address a)
+foldmp da f = unsafePerformIO $ do
+    (sa, mb) <- first edges <$> mailbox da
+    latest <- newIORef (0, da)
+    return
+        . (, mb)
+        . Signal $ \i -> do
+            (time, val) <- readIORef latest
+            case compare i time of
+                GT -> update sa i (Just latest) time val
+                LT -> update sa i Nothing 0 da
+                EQ -> return val
   where
-    update i mlatest time val | i == time = return val
-                              | otherwise = do
+    update sa i mlatest time val' | i == time = return val'
+                                  | otherwise = do
         let latestf = maybe (const $ return ())
                             writeIORef
                             mlatest
-        a <- runSignal sa i
-        let newval = f a val
+        c <- runSignal sa i
+        let val = case c of
+                    Changed   a -> a
+                    Unchanged _ -> val'
+
+        newval <- runSignal (f val) i
         latestf (i, newval)
-        update i mlatest (time + 1) newval
+        update sa i mlatest (time + 1) newval
+
 
 edges' :: (a -> a -> Bool) -> Signal a -> Signal (Edge a)
 edges' f sa = Signal $ \i -> do

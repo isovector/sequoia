@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
+import Control.Monad (when)
+import Control.Monad.IO.Class (liftIO)
 import Debug.Trace
 import Game.Sequoia
 import Game.Sequoia.Color
@@ -15,15 +17,32 @@ config = EngineConfig
 
 type Prop = Prop' ()
 
+{-# NOINLINE movement #-}
 movement :: Signal Prop
-movement = foldp update (filled red $ rect origin 10 10) $
-    (,) <$> elapsed <*> KB.arrows
-  where
-    update (dt, dir) p = tryMove otherBlock theFloor p
-                       . scaleRel dt $ dir * 300
+(movement, movementAddr) = foldmp (filled red $ rect origin 10 10) $
+    \p -> do
+        dt  <- elapsed
+        dir <- KB.arrows
+        -- TODO(sandy): THERE IS A BUG IN SG CIRCLE RECT DETECTION
+        return . tryMove otherBlock [] p
+               . scaleRel dt $ dir * 300
+
+magicSignal :: Signal Prop
+magicSignal = do
+    t  <- totalElapsed
+    mv <- movement
+    when (t > 3 && t < 3.1)
+        . mail movementAddr
+        . const
+        . filled blue
+        $ circle (center mv) 5
+    return mv
+
+totalElapsed :: Signal Time
+totalElapsed = foldp (+) 0 elapsed
 
 theFloor :: [Prop]
-theFloor = return . traced white $ rect origin 400 400
+theFloor = return . traced white $ rect origin 220 400
 
 otherBlock :: [Prop]
 otherBlock = return
@@ -37,13 +56,8 @@ stanz = return
       . color red
       $ toStanza "hello sequoia"
 
-sigA :: Signal Int
-sigB :: Signal Int
-(sigA, addrA) = newMailbox "a" 0
-(sigB, addrB) = newMailbox "b" 0
-
 mainSig :: Signal [Prop]
-mainSig = (: stanz ++ otherBlock) <$> movement
+mainSig = (: stanz ++ otherBlock ++ theFloor) <$> magicSignal
 
 space :: Signal Bool
 space = KB.keyPress KB.SpaceKey

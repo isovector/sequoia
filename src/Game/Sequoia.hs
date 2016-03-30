@@ -172,7 +172,10 @@ renderStanza (Stanza { .. }) = do
                                              $ Pango.layoutGetExtents layout
 
     unpackFor stanzaCentre Cairo.moveTo
-    Cairo.relMoveTo (-w / 2) (-h / 2)
+    flip Cairo.relMoveTo (-h / 2) $ case stanzaAlignment of
+      LeftAligned  -> 0
+      Centered     -> -w / 2
+      RightAligned -> -w
     unpackColFor stanzaColor Cairo.setSourceRGBA
     Pango.showLayout layout
 

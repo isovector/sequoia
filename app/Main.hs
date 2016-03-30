@@ -52,6 +52,7 @@ otherBlock = return
 stanz :: [Prop]
 stanz = return
       . StanzaProp
+      . aligned RightAligned
       . monospace
       . color red
       $ toStanza "hello sequoia"

@@ -12,6 +12,7 @@ module Game.Sequoia.Types
     , Style (..)
     , FontStyle (..)
     , FontWeight (..)
+    , StanzaAlignment (..)
     , Stanza (..)
     , defaultLine
     , mkPos
@@ -78,14 +79,20 @@ data FontStyle = NormalStyle
                | ItalicStyle
                deriving (Show, Eq, Ord, Enum, Read)
 
+data StanzaAlignment = LeftAligned
+                     | Centered
+                     | RightAligned
+                     deriving (Show, Eq, Ord, Enum, Read)
+
 data Stanza = Stanza
-    { stanzaUTF8     :: Text
-    , stanzaColor    :: Color
-    , stanzaTypeface :: Text
-    , stanzaHeight   :: Double
-    , stanzaWeight   :: FontWeight
-    , stanzaStyle    :: FontStyle
-    , stanzaCentre   :: Pos
+    { stanzaUTF8      :: Text
+    , stanzaColor     :: Color
+    , stanzaTypeface  :: Text
+    , stanzaHeight    :: Double
+    , stanzaWeight    :: FontWeight
+    , stanzaStyle     :: FontStyle
+    , stanzaCentre    :: Pos
+    , stanzaAlignment :: StanzaAlignment
     } deriving (Show, Eq)
 
 data FillStyle = Solid Color

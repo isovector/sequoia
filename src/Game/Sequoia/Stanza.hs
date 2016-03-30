@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Game.Sequoia.Stanza
-    ( bold
+    ( aligned
+    , bold
     , color
     , defaultStanza
     , height
@@ -25,6 +26,7 @@ defaultStanza = Stanza
     , stanzaWeight = NormalWeight
     , stanzaStyle = NormalStyle
     , stanzaCentre = origin
+    , stanzaAlignment = LeftAligned
     }
 
 toStanza :: Text -> Stanza
@@ -44,6 +46,9 @@ oblique txt = txt { stanzaStyle = ObliqueStyle }
 
 color :: Color -> Stanza -> Stanza
 color col txt = txt { stanzaColor = col }
+
+aligned :: StanzaAlignment -> Stanza -> Stanza
+aligned a txt = txt { stanzaAlignment = a }
 
 monospace :: Stanza -> Stanza
 monospace txt = txt { stanzaTypeface = "monospace" }

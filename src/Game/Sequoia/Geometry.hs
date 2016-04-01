@@ -63,7 +63,9 @@ sweepProp ps p rel =
      in sweepLine ps pos rel ++ overlapping ps (move rel p)
 
 tryMove :: [Prop' a] -> [Prop' a] -> Prop' a -> Rel -> Prop' a
-tryMove walls floors p rel =
+tryMove walls floors p rel
+  | rel == origin = p
+  | otherwise =
     let pos = center p
         -- TODO(sandy): make this a real sweep
         hitWalls = sweepLine walls pos rel

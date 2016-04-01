@@ -3,11 +3,15 @@
 
 module Game.Sequoia.Keyboard
     ( Key(..)
-    , isDown
     , keysDown
+    , isDown
+    , isDown'
     , keyPress
+    , keyPress'
     , arrows
+    , arrows'
     , wasd
+    , wasd'
     ) where
 
 import Control.Applicative
@@ -757,24 +761,34 @@ instance Enum Key where
     toEnum 284 = App2Key
     toEnum _ = error "Game.Sequoia.Keyboard.Key.toEnum: bad argument"
 
+keyPress' :: Signal [Key] -> Key -> Signal Bool
+keyPress' keys k = (Changed True ==) <$> (edges $ isDown' keys k)
+
 keyPress :: Key -> Signal Bool
-keyPress k = (Changed True ==) <$> (edges $ isDown k)
+keyPress = keyPress' keysDown
+
+isDown' :: Signal [Key] -> Key -> Signal Bool
+isDown' keys k = elem k <$> keys
 
 isDown :: Key -> Signal Bool
-isDown k = elem k <$> keysDown
+isDown = isDown' keysDown
 
 keysDown :: Signal [Key]
 keysDown = amnesia [] . liftIO $ map toEnum <$> getKeyState
 
-arrows, wasd :: Signal Rel
-arrows = liftArrows UpKey LeftKey DownKey RightKey
-wasd   = liftArrows WKey  AKey    SKey    DKey
+arrows', wasd' :: Signal [Key] -> Signal Rel
+arrows' = liftArrows UpKey LeftKey DownKey RightKey
+wasd'   = liftArrows WKey  AKey    SKey    DKey
 
-liftArrows :: Key -> Key -> Key -> Key -> Signal Rel
-liftArrows uk lk dk rk = liftSig <$> isDown uk
-                                 <*> isDown lk
-                                 <*> isDown dk
-                                 <*> isDown rk
+arrows, wasd :: Signal Rel
+arrows = arrows' keysDown
+wasd   = arrows' keysDown
+
+liftArrows :: Key -> Key -> Key -> Key -> Signal [Key] -> Signal Rel
+liftArrows uk lk dk rk keys = liftSig <$> isDown' keys uk
+                                      <*> isDown' keys lk
+                                      <*> isDown' keys dk
+                                      <*> isDown' keys rk
   where
     liftSig u l d r = uncurry mkRel $ mapT fromIntegral
         (- 1 * fromEnum l + 1 * fromEnum r

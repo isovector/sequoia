@@ -6,7 +6,6 @@
 module Game.Sequoia
     ( EngineConfig (..)
     , run
-    , amnesia
     , module Control.Applicative
     , module Game.Sequoia.Geometry
     , module Game.Sequoia.Scene
@@ -52,27 +51,6 @@ data EngineConfig = EngineConfig {
   windowTitle :: String
 }
 
-{-# NOINLINE amnesia #-}
--- |A signal which remembers only one sample in the past. Highly unsafe to
--- reminisce about, as you might imagine.
-amnesia :: a -> Signal a -> Signal a
-amnesia a sa = unsafePerformIO $ do
-    current <- newIORef a
-    last    <- newIORef a
-    sample  <- newIORef 0
-
-    return . Signal $ \i -> do
-        now <- readIORef globalTime
-        ago <- readIORef sample
-        when (now /= ago) $ do
-            readIORef current >>= writeIORef last
-            runSignal sa now >>=  writeIORef current
-            writeIORef sample now
-        case now - i of
-          0 -> readIORef current
-          1 -> readIORef last
-          _ -> return a
-
 startup :: EngineConfig -> IO Engine
 startup (EngineConfig { .. }) = withCAString windowTitle $ \title -> do
     let (w, h) = mapT fromIntegral windowDimensions
@@ -94,7 +72,6 @@ startup (EngineConfig { .. }) = withCAString windowTitle $ \title -> do
 run :: EngineConfig -> Signal [Prop' a] -> IO ()
 run cfg scene = do
     e <- startup cfg
-    mail' engineAddr $ const e
     let app = (,) <$> scene <*> Window.dimensions
         run' i = do
             writeIORef globalTime i

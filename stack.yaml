@@ -7,6 +7,7 @@ packages:
 resolver: lts-5.2
 extra-deps:
     - sdl2-1.2.0
+    - frpnow-0.18
 
 flags: {}
 

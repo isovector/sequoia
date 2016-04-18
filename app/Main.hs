@@ -1,67 +1,26 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import Control.Monad (when)
-import Control.Monad.IO.Class (liftIO)
-import Debug.Trace
-import Game.Sequoia
-import Game.Sequoia.Color
-import Game.Sequoia.Stanza
-import System.IO.Unsafe (unsafePerformIO)
-import qualified Game.Sequoia.Keyboard as KB
+import Control.FRPNow
+import Control.Applicative
 
-config = EngineConfig
-    { windowDimensions = (640, 480)
-    , windowTitle = "sweet cuppin' cakes"
-    }
+n = 11
 
-type Prop = Prop' ()
+main = runNowMaster (test n)
 
-{-# NOINLINE movement #-}
-movement :: Signal Prop
-(movement, movementAddr) = foldmp (filled red $ rect origin 10 10) $
-    \p -> do
-        dt  <- elapsed
-        dir <- KB.arrows
-        -- TODO(sandy): THERE IS A BUG IN SG CIRCLE RECT DETECTION
-        return . tryMove otherBlock [] p
-               . scaleRel dt $ dir * 300
+test :: Int -> Now (Event ())
+test n = do b <- count
+            a <- sample b
+            sync . putStrLn $ show a
+            e <- sample (when ((n ==) <$> b))
+            return e
 
-magicSignal :: Signal Prop
-magicSignal = do
-    t  <- totalElapsed
-    mv <- movement
-    when (t > 3 && t < 3.1)
-        . mail movementAddr
-        . const
-        . filled blue
-        $ circle (center mv) 5
-    return mv
+magic :: (Int -> a) -> Now (Behavior a)
+magic f = loop 0 where
+  loop i =  do  e <- async (return ())
+                e'<- planNow (loop (i+1) <$ e)
+                return (pure (f i) `switch` e')
 
-totalElapsed :: Signal Time
-totalElapsed = foldp (+) 0 elapsed
-
-theFloor :: [Prop]
-theFloor = return . traced white $ rect origin 220 400
-
-otherBlock :: [Prop]
-otherBlock = return
-           . traced yellow
-           $ rect (mkPos (-200) 100) 40 80
-
-stanz :: [Prop]
-stanz = return
-      . StanzaProp
-      . aligned RightAligned
-      . monospace
-      . color red
-      $ toStanza "hello sequoia"
-
-mainSig :: Signal [Prop]
-mainSig = (: stanz ++ otherBlock ++ theFloor) <$> magicSignal
-
-space :: Signal Bool
-space = KB.keyPress KB.SpaceKey
-
-main = run config mainSig
+count :: Now (Behavior Int)
+count = magic id
 

@@ -1,14 +1,20 @@
 {-# LANGUAGE TupleSections #-}
 module Game.Sequoia.Signal
-    ( Signal
+    ( Signal -- TODO(sandy): remove this later
+    , module Control.FRPNow.Core
+    , module Control.FRPNow.Lib
+    , whenE
     , foldp
     ) where
 
-import Control.Monad
 import Control.FRPNow.Core
-import Control.FRPNow.Lib
+import Control.FRPNow.Lib hiding (when)
+import qualified Control.FRPNow.Lib as Lib (when)
 
 type Signal = Behavior
 
-foldp :: Eq a => (a -> b -> b) -> b -> Signal a -> Signal b
-foldp f b a = join $ foldB (flip f) b a
+whenE :: Behavior Bool -> Behavior (Event ())
+whenE = Lib.when
+
+foldp :: Eq a => (a -> b -> b) -> b -> Behavior a -> Behavior (Behavior b)
+foldp f b a = foldB (flip f) b a

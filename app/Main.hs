@@ -3,24 +3,10 @@ module Main where
 
 import Control.FRPNow
 import Control.Applicative
+import Game.Sequoia
+import Game.Sequoia.Color
 
-n = 11
+b :: Now (Behavior [Prop' ()])
+b = pure . pure . return . filled red $ rect origin 50 50
 
-main = runNowMaster (test n)
-
-test :: Int -> Now (Event ())
-test n = do b <- count
-            a <- sample b
-            sync . putStrLn $ show a
-            e <- sample (when ((n ==) <$> b))
-            return e
-
-magic :: (Int -> a) -> Now (Behavior a)
-magic f = loop 0 where
-  loop i =  do  e <- async (return ())
-                e'<- planNow (loop (i+1) <$ e)
-                return (pure (f i) `switch` e')
-
-count :: Now (Behavior Int)
-count = magic id
-
+main = flip play b $ EngineConfig (640, 480) "hello"

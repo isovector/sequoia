@@ -5,7 +5,7 @@
 
 module Game.Sequoia
     ( EngineConfig (..)
-    , run
+    , play
     , module Control.Applicative
     , module Game.Sequoia.Geometry
     , module Game.Sequoia.Scene
@@ -41,9 +41,6 @@ import qualified Graphics.Rendering.Cairo as Cairo
 import qualified Graphics.Rendering.Pango as Pango
 import qualified Graphics.UI.SDL as SDL
 
-globalTime :: IORef Int
-globalTime = unsafePerformIO $ newIORef 0
-
 data EngineConfig = EngineConfig {
   windowDimensions :: (Int, Int),
   -- windowIsFullscreen :: Bool,
@@ -69,18 +66,37 @@ startup (EngineConfig { .. }) = withCAString windowTitle $ \title -> do
                   , continue = True
                   }
 
-run :: EngineConfig -> Signal [Prop' a] -> IO ()
-run cfg scene = do
-    e <- startup cfg
-    let app = (,) <$> scene <*> Window.dimensions
-        run' i = do
-            writeIORef globalTime i
-            continue <- runSignal app i >>= run''
-            when continue . run' $ i + 1
-
-        run'' = uncurry $ render e
-    run' 0
+play :: EngineConfig -> Now (Signal [Prop' a]) -> IO ()
+play cfg sceneNow = do
+    runNowMaster $ do
+        engine <- sync $ startup cfg
+        quit <- wantsQuit engine sceneNow
+        sample $ whenE quit
     SDL.quit
+
+wantsQuit :: Engine -> Now (Signal [Prop' a]) -> Now (Behavior Bool)
+wantsQuit engine sceneNow = loop
+  where
+    loop = do
+        e  <- async (return ())
+        e' <- planNow $ loop <$ e
+        sceneSig <- sceneNow
+        scene <- sample sceneSig
+
+        quit <- sync $ render engine scene (640, 480)
+        return $ pure quit `switch` e'
+
+-- run :: EngineConfig -> Now (Signal [Prop' a]) -> IO ()
+-- run cfg scene = do
+--     e <- startup cfg
+--     let app = (,) <$> scene <*> Window.dimensions
+--         run' i = do
+--             continue <- runSignal app i >>= run''
+--             when continue . run' $ i + 1
+
+--         run'' = uncurry $ render e
+--     run' 0
+--     SDL.quit
 
 render :: Engine -> [Prop' a] -> (Int, Int) -> IO Bool
 render e@(Engine { .. }) ps size@(w, h) =
@@ -114,7 +130,7 @@ render e@(Engine { .. }) ps size@(w, h) =
         SDL.destroyTexture texture
         SDL.renderPresent renderer
 
-        not <$> SDL.quitRequested
+        SDL.quitRequested
 
 render' :: [Prop' a] -> (Int, Int) -> Cairo.Render ()
 render' ps size = do

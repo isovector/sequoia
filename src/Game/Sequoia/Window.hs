@@ -13,15 +13,15 @@ import Game.Sequoia.Engine
 import Game.Sequoia.Signal
 import qualified Graphics.UI.SDL as SDL
 
-dimensions :: Engine -> Now (Signal (Int, Int))
+dimensions :: Engine -> Now (Behavior (Int, Int))
 dimensions = liftWindow SDL.getWindowSize
 
-position :: Engine -> Now (Signal (Int, Int))
+position :: Engine -> Now (Behavior (Int, Int))
 position = liftWindow SDL.getWindowPosition
 
 liftWindow :: (SDL.Window -> Ptr CInt -> Ptr CInt -> IO ())
            -> Engine
-           -> Now (Signal (Int, Int))
+           -> Now (Behavior (Int, Int))
 liftWindow f e = lifted
   where
     lifted = liftIO .

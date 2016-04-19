@@ -21,18 +21,17 @@ type Time = Double
 --   where
 --     update new (old, _) = (new, old)
 
+getClock :: Now (Behavior Time)
+getClock = do
+    now <- sync getTime
+    loop now
+  where
+    loop last = do
+        now <- sync getTime
+        e  <- async (return ())
+        e' <- planNow $ loop now <$ e
+        return $ pure (now - last) `switch` e'
+
 getTime :: IO Time
 getTime = realToFrac <$> getPOSIXTime
 
-getClock :: Double -> Now (Behavior Double)
-getClock precision =
-  do start <- sync getTime
-     (res,cb) <- callbackStream
-     wres<- sync $ mkWeakPtr res Nothing
-     let getDiff = (subtract start) <$> getTime
-     let onTimeOut =
-              deRefWeak wres >>= \x ->
-                 case x of
-                   Just _ -> getDiff >>= cb >> return True
-                   Nothing -> return False
-     sample $ fromChanges 0 res

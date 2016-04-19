@@ -70,17 +70,17 @@ play :: EngineConfig -> Now (Signal [Prop' a]) -> IO ()
 play cfg sceneNow = do
     runNowMaster $ do
         engine <- sync $ startup cfg
-        quit <- wantsQuit engine sceneNow
+        sceneSig <- sceneNow
+        quit <- wantsQuit engine sceneSig
         sample $ whenE quit
     SDL.quit
 
-wantsQuit :: Engine -> Now (Signal [Prop' a]) -> Now (Behavior Bool)
-wantsQuit engine sceneNow = loop
+wantsQuit :: Engine -> Signal [Prop' a] -> Now (Behavior Bool)
+wantsQuit engine sceneSig = loop
   where
     loop = do
         e  <- async (return ())
         e' <- planNow $ loop <$ e
-        sceneSig <- sceneNow
         scene <- sample sceneSig
 
         quit <- sync $ render engine scene (640, 480)

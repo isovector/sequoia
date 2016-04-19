@@ -3,23 +3,19 @@
 
 module Game.Sequoia.Keyboard
     ( Key(..)
-    -- , keysDown
-    -- , isDown
-    -- , isDown'
+    , keysDown
+    , isDown
     -- , keyPress
-    -- , keyPress'
-    -- , arrows
-    -- , arrows'
-    -- , wasd
-    -- , wasd'
+    , arrows
+    , wasd
     ) where
 
 import Control.Applicative
-import Control.Monad.IO.Class (liftIO)
 import Data.List (elemIndices)
 import Foreign hiding (shift)
 import Foreign.C.Types (CInt)
 import Game.Sequoia
+import Game.Sequoia.Engine
 import Game.Sequoia.Signal
 import Game.Sequoia.Types
 import Game.Sequoia.Utils
@@ -761,37 +757,27 @@ instance Enum Key where
     toEnum 284 = App2Key
     toEnum _ = error "Game.Sequoia.Keyboard.Key.toEnum: bad argument"
 
--- keyPress' :: Signal [Key] -> Key -> Signal Bool
--- keyPress' keys k = (Changed True ==) <$> (edges $ isDown' keys k)
+keysDown :: Now (Behavior [Key])
+keysDown = poll $ map toEnum <$> getKeyState
 
--- keyPress :: Key -> Signal Bool
--- keyPress = keyPress' keysDown
+-- keyPress :: Behavior [Key] -> Key -> Behavior Bool
+-- keyPress keys k = (Changed True ==) <$> (edges $ isDown' keys k)
 
--- isDown' :: Signal [Key] -> Key -> Signal Bool
--- isDown' keys k = elem k <$> keys
+isDown :: Behavior [Key] -> Key -> Behavior Bool
+isDown keys k = elem k <$> keys
 
--- isDown :: Key -> Signal Bool
--- isDown = isDown' keysDown
+arrows, wasd :: Behavior [Key] -> Behavior Rel
+arrows = liftArrows UpKey LeftKey DownKey RightKey
+wasd   = liftArrows WKey  AKey    SKey    DKey
 
--- keysDown :: Signal [Key]
--- keysDown = amnesia [] . liftIO $ map toEnum <$> getKeyState
-
--- arrows', wasd' :: Signal [Key] -> Signal Rel
--- arrows' = liftArrows UpKey LeftKey DownKey RightKey
--- wasd'   = liftArrows WKey  AKey    SKey    DKey
-
--- arrows, wasd :: Signal Rel
--- arrows = arrows' keysDown
--- wasd   = arrows' keysDown
-
--- liftArrows :: Key -> Key -> Key -> Key -> Signal [Key] -> Signal Rel
--- liftArrows uk lk dk rk keys = liftSig <$> isDown' keys uk
---                                       <*> isDown' keys lk
---                                       <*> isDown' keys dk
---                                       <*> isDown' keys rk
---   where
---     liftSig u l d r = uncurry mkRel $ mapT fromIntegral
---         (- 1 * fromEnum l + 1 * fromEnum r
---         , -1 * fromEnum u + 1 * fromEnum d
---         )
+liftArrows :: Key -> Key -> Key -> Key -> Behavior [Key] -> Behavior Rel
+liftArrows uk lk dk rk keys = liftSig <$> isDown keys uk
+                                      <*> isDown keys lk
+                                      <*> isDown keys dk
+                                      <*> isDown keys rk
+  where
+    liftSig u l d r = uncurry mkRel $ mapT fromIntegral
+        (- 1 * fromEnum l + 1 * fromEnum r
+        , -1 * fromEnum u + 1 * fromEnum d
+        )
 

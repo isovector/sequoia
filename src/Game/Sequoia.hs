@@ -66,11 +66,12 @@ startup (EngineConfig { .. }) = withCAString windowTitle $ \title -> do
                   , continue = True
                   }
 
-play :: EngineConfig -> Now (Signal [Prop' a]) -> IO ()
-play cfg sceneNow = do
+play :: EngineConfig -> Now i -> (i -> Now (Signal [Prop' a])) -> IO ()
+play cfg init sceneNow = do
     runNowMaster $ do
         engine <- sync $ startup cfg
-        sceneSig <- sceneNow
+        i <- init
+        sceneSig <- sceneNow i
         quit <- wantsQuit engine sceneSig
         sample $ whenE quit
     SDL.quit

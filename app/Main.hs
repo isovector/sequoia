@@ -16,15 +16,18 @@ import Game.Sequoia.Color
 import Game.Sequoia.Utils
 
 square :: Member (Reader (Behavior Time)) r
-       => Eff r (Behavior (Prop' ()))
+       => Eff r (Behavior (Behavior (Prop' ())))
 square = do
-    clock <- trace "asking" ask
-    return . join $
+    clock <- ask
+    return $
         foldp f (filled red $ rect origin 50 50) clock
   where
-    f dt sq = trace (show $ center sq) $ move (mkRel 0 $ dt * 100) sq
+    f dt sq = move (mkRel 0 $ dt * 100) sq
 
-main = play (EngineConfig (640, 480) "hello") $ do
+magic = do
     clock <- getClock
     let sq = run $ runReader square clock
+    sample sq
+
+main = play (EngineConfig (640, 480) "hello") magic $ \sq -> do
     return $ fmap return sq

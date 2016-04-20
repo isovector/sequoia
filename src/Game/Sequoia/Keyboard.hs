@@ -3,7 +3,7 @@
 
 module Game.Sequoia.Keyboard
     ( Key(..)
-    , keysDown
+    , getKeyboard
     , isDown
     -- , keyPress
     , arrows
@@ -15,7 +15,6 @@ import Data.List (elemIndices)
 import Foreign hiding (shift)
 import Foreign.C.Types (CInt)
 import Game.Sequoia
-import Game.Sequoia.Engine
 import Game.Sequoia.Signal
 import Game.Sequoia.Types
 import Game.Sequoia.Utils
@@ -757,8 +756,8 @@ instance Enum Key where
     toEnum 284 = App2Key
     toEnum _ = error "Game.Sequoia.Keyboard.Key.toEnum: bad argument"
 
-keysDown :: Now (Behavior [Key])
-keysDown = poll $ map toEnum <$> getKeyState
+getKeyboard :: Behavior (Event ()) -> Now (Behavior [Key])
+getKeyboard = scheduled $ map toEnum <$> getKeyState
 
 -- keyPress :: Behavior [Key] -> Key -> Behavior Bool
 -- keyPress keys k = (Changed True ==) <$> (edges $ isDown' keys k)
@@ -771,10 +770,11 @@ arrows = liftArrows UpKey LeftKey DownKey RightKey
 wasd   = liftArrows WKey  AKey    SKey    DKey
 
 liftArrows :: Key -> Key -> Key -> Key -> Behavior [Key] -> Behavior Rel
-liftArrows uk lk dk rk keys = liftSig <$> isDown keys uk
-                                      <*> isDown keys lk
-                                      <*> isDown keys dk
-                                      <*> isDown keys rk
+liftArrows uk lk dk rk keys =
+    liftSig <$> isDown keys uk
+            <*> isDown keys lk
+            <*> isDown keys dk
+            <*> isDown keys rk
   where
     liftSig u l d r = uncurry mkRel $ mapT fromIntegral
         (- 1 * fromEnum l + 1 * fromEnum r

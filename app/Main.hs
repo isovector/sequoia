@@ -30,8 +30,9 @@ square = do
     f (dt, keys) sq = move (keys * 10) sq
 
 magic = do
-    clock    <- getClock
-    keyboard <- keysDown
+    schedule <- getScheduler
+    clock    <- getElapsedClock schedule
+    keyboard <- getKeyboard schedule
     let sq = run . flip runReader clock
                  . flip runReader keyboard
                  $ square

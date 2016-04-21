@@ -7,6 +7,7 @@ module Game.Sequoia.Signal
     , foldp
     , poll
     , scheduled
+    , scheduledFold
     , getScheduler
     ) where
 
@@ -42,11 +43,15 @@ poll io = loop
         return $ pure a `switch` e'
 
 scheduled :: IO a -> Behavior (Event ()) -> Now (Behavior a)
-scheduled io es = loop
-  where
-    loop = do
-        e  <- sample es
-        e' <- planNow $ loop <$ e
-        a <- sync io
-        return $ pure a `switch` e'
+scheduled io es = scheduledFold es (return undefined) (const io)
 
+scheduledFold :: Behavior (Event ()) -> IO a -> (a -> IO a) -> Now (Behavior a)
+scheduledFold es iofirst io = do
+    first <- sync iofirst
+    loop first
+  where
+    loop prev = do
+        e  <- sample es
+        a <- sync $ io prev
+        e' <- planNow $ loop a <$ e
+        return $ pure a `switch` e'

@@ -27,10 +27,10 @@ square = do
     return $ foldp f (filled red $ rect origin 50 50)
            $ (,) <$> clock <*> arrows keys
   where
-    f (dt, keys) sq = move (keys * 10) sq
+    f (dt, keys) sq = move (scaleRel (300 * dt) keys) sq
 
 magic = do
-    schedule <- getFpsScheduler 5
+    schedule <- getFpsScheduler 60
     clock    <- getElapsedClock schedule
     keyboard <- getKeyboard schedule
     let sq = run . flip runReader clock

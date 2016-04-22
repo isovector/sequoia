@@ -12,6 +12,7 @@ module Game.Sequoia
     , module Game.Sequoia.Signal
     , module Game.Sequoia.Time
     , module Game.Sequoia.Types
+    , Engine ()
     ) where
 
 import Control.Applicative
@@ -32,6 +33,7 @@ import Game.Sequoia.Signal
 import Game.Sequoia.Time
 import Game.Sequoia.Types
 import Game.Sequoia.Utils
+import Game.Sequoia.Window
 import System.Endian (fromBE32)
 import System.IO.Unsafe (unsafePerformIO)
 import qualified Data.Map as M
@@ -66,40 +68,29 @@ startup (EngineConfig { .. }) = withCAString windowTitle $ \title -> do
                   , continue = True
                   }
 
-play :: EngineConfig -> Now i -> (i -> Now (Signal [Prop' a])) -> IO ()
+play :: EngineConfig
+     -> (Engine -> Now i)
+     -> (i -> Now (Signal [Prop' a]))
+     -> IO ()
 play cfg init sceneNow = do
     runNowMaster $ do
-        engine <- sync $ startup cfg
-        i <- init
-        sceneSig <- sceneNow i
-        quit <- wantsQuit engine sceneSig
+        engine   <- sync $ startup cfg
+        schedule <- getScheduler
+        sceneSig <- init engine >>= sceneNow
+        dimSig   <- getDimensions schedule engine
+        quit     <- scheduled (wantsQuit engine sceneSig dimSig) schedule
         sample $ whenE quit
     SDL.quit
 
-wantsQuit :: Engine -> Signal [Prop' a] -> Now (Behavior Bool)
-wantsQuit engine sceneSig = loop
-  where
-    loop = do
-        e  <- async (return ())
-        e' <- planNow $ loop <$ e
-        scene <- sample sceneSig
+wantsQuit :: Engine -> Signal [Prop' a] -> Signal (Int, Int) -> Now Bool
+wantsQuit engine sceneSig dimSig = do
+    scene <- sample sceneSig
+    dims  <- sample dimSig
+    sync $ do
+        render engine scene dims
+        SDL.quitRequested
 
-        quit <- sync $ render engine scene (640, 480)
-        return $ pure quit `switch` e'
-
--- run :: EngineConfig -> Now (Signal [Prop' a]) -> IO ()
--- run cfg scene = do
---     e <- startup cfg
---     let app = (,) <$> scene <*> Window.dimensions
---         run' i = do
---             continue <- runSignal app i >>= run''
---             when continue . run' $ i + 1
-
---         run'' = uncurry $ render e
---     run' 0
---     SDL.quit
-
-render :: Engine -> [Prop' a] -> (Int, Int) -> IO Bool
+render :: Engine -> [Prop' a] -> (Int, Int) -> IO ()
 render e@(Engine { .. }) ps size@(w, h) =
     alloca $ \pixelsptr ->
     alloca $ \pitchptr  -> do
@@ -130,8 +121,6 @@ render e@(Engine { .. }) ps size@(w, h) =
         SDL.renderCopy renderer texture nullPtr nullPtr
         SDL.destroyTexture texture
         SDL.renderPresent renderer
-
-        SDL.quitRequested
 
 render' :: [Prop' a] -> (Int, Int) -> Cairo.Render ()
 render' ps size = do

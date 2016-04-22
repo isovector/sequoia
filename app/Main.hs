@@ -29,7 +29,8 @@ square = do
   where
     f (dt, keys) sq = move (scaleRel (300 * dt) keys) sq
 
-magic = do
+magic :: Engine -> Now (Behavior (Prop' ()))
+magic engine = do
     schedule <- getFpsScheduler 60
     clock    <- getElapsedClock schedule
     keyboard <- getKeyboard schedule

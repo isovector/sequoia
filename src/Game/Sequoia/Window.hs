@@ -1,6 +1,5 @@
 module Game.Sequoia.Window
-    ( dimensions
-    , position
+    ( getDimensions
     ) where
 
 import Control.FRPNow.Core
@@ -13,22 +12,23 @@ import Game.Sequoia.Engine
 import Game.Sequoia.Signal
 import qualified Graphics.UI.SDL as SDL
 
-dimensions :: Engine -> Now (Behavior (Int, Int))
-dimensions = liftWindow SDL.getWindowSize
+getDimensions :: Behavior (Event()) -> Engine -> Now (Behavior (Int, Int))
+getDimensions = liftWindow SDL.getWindowSize
 
-position :: Engine -> Now (Behavior (Int, Int))
+position :: Behavior (Event()) -> Engine -> Now (Behavior (Int, Int))
 position = liftWindow SDL.getWindowPosition
 
 liftWindow :: (SDL.Window -> Ptr CInt -> Ptr CInt -> IO ())
+           -> Behavior (Event())
            -> Engine
            -> Now (Behavior (Int, Int))
-liftWindow f e = lifted
+liftWindow f schedule e = scheduled (sync lifted) schedule
   where
-    lifted = liftIO .
+    lifted =
         alloca $ \wptr ->
         alloca $ \hptr -> do
             f (window e) wptr hptr
             w <- peek wptr
             h <- peek hptr
-            return $ return (fromIntegral w, fromIntegral h)
+            return (fromIntegral w, fromIntegral h)
 

@@ -5,7 +5,6 @@ module Game.Sequoia.Signal
     , module Control.FRPNow.Lib
     , whenE
     , foldp
-    , poll
     , scheduled
     , scheduledFold
     , getScheduler
@@ -32,26 +31,20 @@ getScheduler = loop
         e' <- planNow $ loop <$ e
         return $ pure e `switch` e'
 
--- TODO(sandy): this seems to sample unreasonably fast
-poll :: IO a -> Now (Behavior a)
-poll io = loop
-  where
-    loop = do
-        e  <- async (return ())
-        e' <- planNow $ loop <$ e
-        a <- sync io
-        return $ pure a `switch` e'
-
-scheduled :: IO a -> Behavior (Event ()) -> Now (Behavior a)
+scheduled :: Now a -> Behavior (Event ()) -> Now (Behavior a)
 scheduled io es = scheduledFold es (return undefined) (const io)
 
-scheduledFold :: Behavior (Event ()) -> IO a -> (a -> IO a) -> Now (Behavior a)
+scheduledFold :: Behavior (Event ())
+              -> Now a
+              -> (a -> Now a)
+              -> Now (Behavior a)
 scheduledFold es iofirst io = do
-    first <- sync iofirst
+    first <- iofirst
     loop first
   where
     loop prev = do
         e  <- sample es
-        a <- sync $ io prev
+        a <- io prev
         e' <- planNow $ loop a <$ e
         return $ pure a `switch` e'
+

@@ -18,26 +18,16 @@ import System.Mem.Weak
 
 type Time = Double
 
--- elapsed :: Signal Time
--- elapsed = fmap (uncurry (-)) . unsafePerformIO $ do
---     start <- getTime
---     return . foldp update (start, start) $ liftIO getTime
---   where
---     update new (old, _) = (new, old)
-
 getClock :: Behavior (Event ()) -> Now (Behavior Time)
-getClock = scheduled getTime
+getClock = scheduled $ sync getTime
 
 getElapsedClock :: Behavior (Event ()) -> Now (Behavior Time)
 getElapsedClock schedule = do
     clock <- getClock schedule
-    sample $ elapsed clock
-
-elapsed :: Behavior Time -> Behavior (Behavior Time)
-elapsed clock = do
-    first <- sample clock
-    last  <- prev first clock
-    return $ (-) <$> clock <*> last
+    sample $ do
+        first <- sample clock
+        last  <- prev first clock
+        return $ (-) <$> clock <*> last
 
 getTime :: IO Time
 getTime = realToFrac <$> getPOSIXTime
@@ -55,9 +45,9 @@ getFpsScheduler frames = do
     schedule <- getScheduler
     fmap (change' (on (==) snd) (const ())) $ scheduledFold
         schedule
-        (getTime >>= \a -> return (a, a))
+        (sync getTime >>= \a -> return (a, a))
         $ \(_, last) -> do
-            now' <- getTime
+            now' <- sync getTime
             return (now',
                    if now' - last > dt
                       then now'

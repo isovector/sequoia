@@ -757,7 +757,7 @@ instance Enum Key where
     toEnum _ = error "Game.Sequoia.Keyboard.Key.toEnum: bad argument"
 
 getKeyboard :: Behavior (Event ()) -> Now (Behavior [Key])
-getKeyboard = scheduled $ map toEnum <$> getKeyState
+getKeyboard = scheduled . sync $ map toEnum <$> getKeyState
 
 -- keyPress :: Behavior [Key] -> Key -> Behavior Bool
 -- keyPress keys k = (Changed True ==) <$> (edges $ isDown' keys k)

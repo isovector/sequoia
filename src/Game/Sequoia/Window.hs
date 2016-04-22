@@ -12,17 +12,16 @@ import Game.Sequoia.Engine
 import Game.Sequoia.Signal
 import qualified Graphics.UI.SDL as SDL
 
-getDimensions :: Behavior (Event()) -> Engine -> Now (Behavior (Int, Int))
+getDimensions :: Engine -> Now (Behavior (Int, Int))
 getDimensions = liftWindow SDL.getWindowSize
 
-position :: Behavior (Event()) -> Engine -> Now (Behavior (Int, Int))
+position :: Engine -> Now (Behavior (Int, Int))
 position = liftWindow SDL.getWindowPosition
 
 liftWindow :: (SDL.Window -> Ptr CInt -> Ptr CInt -> IO ())
-           -> Behavior (Event())
            -> Engine
            -> Now (Behavior (Int, Int))
-liftWindow f schedule e = scheduled (sync lifted) schedule
+liftWindow f e = poll $ sync lifted
   where
     lifted =
         alloca $ \wptr ->

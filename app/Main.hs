@@ -24,16 +24,15 @@ square :: ( Member (Reader (Behavior Time)) r
 square = do
     (clock :: Behavior Time) <- ask
     (keys :: Behavior [Key]) <- ask
-    return $ foldp f (filled red $ rect origin 50 50)
+    return . foldp f (filled red $ rect origin 50 50)
            $ (,) <$> clock <*> arrows keys
   where
     f (dt, keys) sq = move (scaleRel (300 * dt) keys) sq
 
 magic :: Engine -> Now (Behavior (Prop' ()))
 magic engine = do
-    schedule <- getFpsScheduler 60
-    clock    <- getElapsedClock schedule
-    keyboard <- getKeyboard schedule
+    clock    <- getElapsedClock
+    keyboard <- getKeyboard
     let sq = run . flip runReader clock
                  . flip runReader keyboard
                  $ square

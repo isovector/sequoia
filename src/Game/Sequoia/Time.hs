@@ -2,7 +2,7 @@ module Game.Sequoia.Time
     ( Time
     , getClock
     , getElapsedClock
-    , getFpsScheduler
+    , fps
     ) where
 
 import Control.Applicative ((<$>))
@@ -18,12 +18,12 @@ import System.Mem.Weak
 
 type Time = Double
 
-getClock :: Behavior (Event ()) -> Now (Behavior Time)
-getClock = scheduled $ sync getTime
+getClock :: Now (Behavior Time)
+getClock = poll $ sync getTime
 
-getElapsedClock :: Behavior (Event ()) -> Now (Behavior Time)
-getElapsedClock schedule = do
-    clock <- getClock schedule
+getElapsedClock :: Now (Behavior Time)
+getElapsedClock = do
+    clock <- getClock
     sample $ do
         first <- sample clock
         last  <- prev first clock
@@ -40,11 +40,9 @@ change' p f b = fmap (fmap f) . futuristic $ do
     notSame v v' | not $ p v v' = Just v'
                  | otherwise    = Nothing
 
-getFpsScheduler :: Double -> Now (Behavior (Event ()))
-getFpsScheduler frames = do
-    schedule <- getScheduler
-    fmap (change' (on (==) snd) (const ())) $ scheduledFold
-        schedule
+fps :: Double -> Now (Behavior (Event ()))
+fps frames = do
+    fmap (change' (on (==) snd) (const ())) $ pollFold
         (sync getTime >>= \a -> return (a, a))
         $ \(_, last) -> do
             now' <- sync getTime

@@ -70,19 +70,18 @@ startup (EngineConfig { .. }) = withCAString windowTitle $ \title -> do
 
 play :: EngineConfig
      -> (Engine -> Now i)
-     -> (i -> Now (Signal [Prop' a]))
+     -> (i -> Now (Behavior [Prop' a]))
      -> IO ()
 play cfg init sceneNow = do
     runNowMaster $ do
         engine   <- sync $ startup cfg
-        schedule <- getScheduler
         sceneSig <- init engine >>= sceneNow
-        dimSig   <- getDimensions schedule engine
-        quit     <- scheduled (wantsQuit engine sceneSig dimSig) schedule
+        dimSig   <- getDimensions engine
+        quit     <- poll $ wantsQuit engine sceneSig dimSig
         sample $ whenE quit
     SDL.quit
 
-wantsQuit :: Engine -> Signal [Prop' a] -> Signal (Int, Int) -> Now Bool
+wantsQuit :: Engine -> Behavior [Prop' a] -> Behavior (Int, Int) -> Now Bool
 wantsQuit engine sceneSig dimSig = do
     scene <- sample sceneSig
     dims  <- sample dimSig

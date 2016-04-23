@@ -18,10 +18,10 @@ import System.Mem.Weak
 
 type Time = Double
 
-getClock :: Now (Behavior Time)
+getClock :: N (B Time)
 getClock = poll $ sync getTime
 
-getElapsedClock :: Now (Behavior Time)
+getElapsedClock :: N (B Time)
 getElapsedClock = do
     clock <- getClock
     sample $ do
@@ -32,7 +32,7 @@ getElapsedClock = do
 getTime :: IO Time
 getTime = realToFrac <$> getPOSIXTime
 
-change' :: (a -> a -> Bool) -> (a -> b) -> Behavior a -> Behavior (Event b)
+change' :: (a -> a -> Bool) -> (a -> b) -> B a -> B (E b)
 change' p f b = fmap (fmap f) . futuristic $ do
     v <- b
     whenJust (notSame v <$> b)
@@ -40,7 +40,7 @@ change' p f b = fmap (fmap f) . futuristic $ do
     notSame v v' | not $ p v v' = Just v'
                  | otherwise    = Nothing
 
-fps :: Double -> Now (Behavior (Event ()))
+fps :: Double -> N (B (E ()))
 fps frames = do
     fmap (change' (on (==) snd) (const ())) $ pollFold
         (sync getTime >>= \a -> return (a, a))

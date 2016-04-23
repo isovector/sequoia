@@ -756,20 +756,20 @@ instance Enum Key where
     toEnum 284 = App2Key
     toEnum _ = error "Game.Sequoia.Keyboard.Key.toEnum: bad argument"
 
-getKeyboard :: Now (Behavior [Key])
+getKeyboard :: N (B [Key])
 getKeyboard = poll . sync $ map toEnum <$> getKeyState
 
--- keyPress :: Behavior [Key] -> Key -> Behavior Bool
+-- keyPress :: B [Key] -> Key -> B Bool
 -- keyPress keys k = (Changed True ==) <$> (edges $ isDown' keys k)
 
-isDown :: Behavior [Key] -> Key -> Behavior Bool
+isDown :: B [Key] -> Key -> B Bool
 isDown keys k = elem k <$> keys
 
-arrows, wasd :: Behavior [Key] -> Behavior Rel
+arrows, wasd :: B [Key] -> B Rel
 arrows = liftArrows UpKey LeftKey DownKey RightKey
-wasd   = liftArrows WKey  AKey    SKey    DKey
+wasd   = liftArrows  WKey    AKey    SKey     DKey
 
-liftArrows :: Key -> Key -> Key -> Key -> Behavior [Key] -> Behavior Rel
+liftArrows :: Key -> Key -> Key -> Key -> B [Key] -> B Rel
 liftArrows uk lk dk rk keys =
     liftSig <$> isDown keys uk
             <*> isDown keys lk

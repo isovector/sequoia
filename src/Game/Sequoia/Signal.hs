@@ -10,6 +10,9 @@ module Game.Sequoia.Signal
     , mailbox
     -- TODO(sandy): remove these after the migration
     , Address
+    , B
+    , N
+    , E
     ) where
 
 import Control.FRPNow.Core
@@ -18,17 +21,20 @@ import Control.FRPNow.Lib hiding (when)
 import qualified Control.FRPNow.Lib as Lib (when)
 
 type Address a = a -> IO ()
+type B = Behavior
+type E = Event
+type N = Now
 
-whenE :: Behavior Bool -> Behavior (Event ())
+whenE :: B Bool -> B (E ())
 whenE = Lib.when
 
-foldp :: Eq a => (a -> b -> b) -> b -> Behavior a -> Behavior (Behavior b)
+foldp :: Eq a => (a -> b -> b) -> b -> B a -> B (B b)
 foldp f b a = foldB (flip f) b a
 
 foldmp :: Eq a
        => a
-       -> (a -> Now a)
-       -> Now (Behavior a, Address (a -> a))
+       -> (a -> N a)
+       -> N (B a, Address (a -> a))
 foldmp da f = do
     (sa, mb) <- callbackStream
     let es = next sa
@@ -47,7 +53,7 @@ foldmp da f = do
         e'  <- planNow $ loop a'' es se' <$ e
         return $ step a'' e'
 
-poll :: Now a -> Now (Behavior a)
+poll :: N a -> N (B a)
 poll io = loop
   where
     loop = do
@@ -56,7 +62,7 @@ poll io = loop
         e' <- planNow $ loop <$ e
         return $ step a e'
 
-pollFold :: Now a -> (a -> Now a) -> Now (Behavior a)
+pollFold :: N a -> (a -> N a) -> N (B a)
 pollFold init io = do
     first <- init
     loop first
@@ -67,7 +73,7 @@ pollFold init io = do
         e' <- planNow $ loop a <$ e
         return $ step a e'
 
-mailbox :: a -> Now (Behavior a, Address a)
+mailbox :: a -> N (B a, Address a)
 mailbox a = do
     (mailbox, send) <- callbackStream
     signal <- sample $ fromChanges a mailbox

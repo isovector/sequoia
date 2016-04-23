@@ -3,6 +3,7 @@ module Game.Sequoia.Signal
     ( module Control.FRPNow.Core
     , module Control.FRPNow.Lib
     , whenE
+    , soonest
     , foldp
     , foldmp
     , poll
@@ -17,13 +18,16 @@ module Game.Sequoia.Signal
 
 import Control.FRPNow.Core
 import Control.FRPNow.EvStream
-import Control.FRPNow.Lib hiding (when)
-import qualified Control.FRPNow.Lib as Lib (when)
+import Control.FRPNow.Lib hiding (when, first)
+import qualified Control.FRPNow.Lib as Lib (when, first)
 
 type Address a = a -> IO ()
 type B = Behavior
 type E = Event
 type N = Now
+
+soonest :: E a -> E a -> B (E a)
+soonest = Lib.first
 
 whenE :: B Bool -> B (E ())
 whenE = Lib.when

@@ -13,6 +13,7 @@ module Game.Sequoia.Scene
     , polygon
     , circle
     , filled
+    , refill
     , invisible
     , styled
     , traced
@@ -98,6 +99,11 @@ circle = Circle
 
 toShape :: Default a => Maybe FillStyle -> Maybe LineStyle -> Shape -> Prop' a
 toShape fs ls = ShapeProp def . Form (Style fs ls)
+
+refill :: Color -> Prop' a -> Prop' a
+refill c = transform
+    (\(Form st s) -> Form (Style (Just $ Solid c) Nothing) s)
+    (\s -> s { stanzaColor = c })
 
 filled :: Default a => Color -> Shape -> Prop' a
 filled c = toShape (Just $ Solid c) Nothing

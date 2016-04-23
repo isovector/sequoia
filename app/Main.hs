@@ -21,15 +21,13 @@ type Prop = Prop' ()
 square :: ( Member (Reader (Behavior Time)) r
           , Member (Reader (Behavior [Key])) r
           )
-       => Behavior Color
-       -> Eff r (Now (Behavior Prop, Address (Prop -> Prop)))
-square color = do
+       => Eff r (Now (Behavior Prop, Address (Prop -> Prop)))
+square = do
     (clock :: Behavior Time) <- ask
     (keys :: Behavior [Key]) <- ask
 
     return $ do
-        c <- sample color
-        foldmp (filled c $ rect origin 50 50) $ \sq -> do
+        foldmp (filled red $ rect origin 50 50) $ \sq -> do
             dt   <- sample clock
             dpos <- sample $ arrows keys
             return $ move (scaleRel (300 * dt) dpos) sq
@@ -38,10 +36,9 @@ magic :: Engine -> Now (Behavior (Prop' ()))
 magic engine = do
     clock      <- getElapsedClock
     keyboard   <- getKeyboard
-    (col, box) <- mailbox red
     (sq, addr) <- run . flip runReader clock
                  . flip runReader keyboard
-                 $ square col
+                 $ square
     poll $ do
         spaceDown <- sample $ isDown keyboard SpaceKey
         aDown     <- sample $ isDown keyboard AKey

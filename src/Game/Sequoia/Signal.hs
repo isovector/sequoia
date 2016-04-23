@@ -33,28 +33,28 @@ foldmp da f = do
     (sa, mb) <- callbackStream
     let es = next sa
     se <- sample es
-    b <- loop da es se
+    b  <- loop da es se
     return (b, mb)
   where
     loop a es se = do
-        e  <- async (return ())
+        e     <- async (return ())
         seMay <- sample $ tryGetEv se
         (a', se') <-
             case seMay of
               Just g  -> sample es >>= return . (g a,)
               Nothing -> return (a, se)
         a'' <- f a'
-        e' <- planNow $ loop a'' es se' <$ e
-        return $ pure a'' `switch` e'
+        e'  <- planNow $ loop a'' es se' <$ e
+        return $ step a'' e'
 
 poll :: Now a -> Now (Behavior a)
 poll io = loop
   where
     loop = do
         e  <- async (return ())
-        a <- io
+        a  <- io
         e' <- planNow $ loop <$ e
-        return $ pure a `switch` e'
+        return $ step a e'
 
 pollFold :: Now a -> (a -> Now a) -> Now (Behavior a)
 pollFold init io = do
@@ -63,9 +63,9 @@ pollFold init io = do
   where
     loop prev = do
         e  <- async (return ())
-        a <- io prev
+        a  <- io prev
         e' <- planNow $ loop a <$ e
-        return $ pure a `switch` e'
+        return $ step a e'
 
 mailbox :: a -> Now (Behavior a, Address a)
 mailbox a = do

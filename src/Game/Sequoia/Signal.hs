@@ -35,8 +35,7 @@ whenE = Lib.when
 foldp :: Eq a => (a -> b -> b) -> b -> B a -> B (B b)
 foldp f b a = foldB (flip f) b a
 
-foldmp :: Eq a
-       => a
+foldmp :: a
        -> (a -> N a)
        -> N (B a, Address (a -> a))
 foldmp da f = do

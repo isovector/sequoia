@@ -40,7 +40,7 @@ foldmp :: a
        -> N (B a, Address (a -> a))
 foldmp da f = do
     (sa, mb) <- callbackStream
-    let es = next sa
+    let es = nextAll sa
     se <- sample es
     b  <- loop da es se
     return (b, mb)
@@ -50,7 +50,7 @@ foldmp da f = do
         seMay <- sample $ tryGetEv se
         (a', se') <-
             case seMay of
-              Just g  -> sample es >>= return . (g a,)
+              Just gs  -> sample es >>= return . (foldr ($) a gs,)
               Nothing -> return (a, se)
         a'' <- f a'
         e'  <- planNow $ loop a'' es se' <$ e

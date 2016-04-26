@@ -5,12 +5,13 @@ module Game.Sequoia.Keyboard
     ( Key(..)
     , getKeyboard
     , isDown
-    -- , keyPress
+    , keyPress
     , arrows
     , wasd
     ) where
 
 import Control.Applicative
+import Control.FRPNow.EvStream
 import Data.List (elemIndices)
 import Foreign hiding (shift)
 import Foreign.C.Types (CInt)
@@ -759,8 +760,8 @@ instance Enum Key where
 getKeyboard :: N (B [Key])
 getKeyboard = poll . sync $ map toEnum <$> getKeyState
 
--- keyPress :: B [Key] -> Key -> B Bool
--- keyPress keys k = (Changed True ==) <$> (edges $ isDown' keys k)
+keyPress :: B [Key] -> Key -> B (E ())
+keyPress keys = next . edges . isDown keys
 
 isDown :: B [Key] -> Key -> B Bool
 isDown keys k = elem k <$> keys

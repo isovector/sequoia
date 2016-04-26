@@ -9,6 +9,7 @@ module Game.Sequoia.Signal
     , poll
     , pollFold
     , mailbox
+    , onEvent
     -- TODO(sandy): remove these after the migration
     , Address
     , B
@@ -81,4 +82,13 @@ mailbox a = do
     (mailbox, send) <- callbackStream
     signal <- sample $ fromChanges a mailbox
     return (signal, send)
+
+onEvent :: B (E a) -> (a -> Now ()) -> Now ()
+onEvent evs f = loop
+  where
+    loop :: Now ()
+    loop = do
+        e <-  sample evs
+        planNow $ (\a -> f a >> loop) <$> e
+        return ()
 

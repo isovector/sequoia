@@ -27,6 +27,8 @@ module Game.Sequoia.Types
     , dot
     , normalize
     , distance
+    , getX
+    , getY
     ) where
 
 import Data.SG.Geometry

@@ -10,8 +10,9 @@ module Game.Sequoia.Signal
     , pollFold
     , mailbox
     , onEvent
+    , scanle
+    , newCollection
     -- TODO(sandy): remove these after the migration
-    , Address
     , B
     , N
     , E
@@ -20,9 +21,10 @@ module Game.Sequoia.Signal
 import Control.FRPNow.Core
 import Control.FRPNow.EvStream
 import Control.FRPNow.Lib hiding (when, first)
+import Data.Map (Map)
 import qualified Control.FRPNow.Lib as Lib (when, first)
+import qualified Data.Map as M
 
-type Address a = a -> IO ()
 type B = Behavior
 type E = Event
 type N = Now
@@ -38,7 +40,7 @@ foldp f b a = foldB (flip f) b a
 
 foldmp :: a
        -> (a -> N a)
-       -> N (B a, Address (a -> a))
+       -> N (B a, (a -> a) -> IO ())
 foldmp da f = do
     (sa, mb) <- callbackStream
     let es = nextAll sa
@@ -77,13 +79,13 @@ pollFold init io = do
         e' <- planNow $ loop a <$ e
         return $ step a e'
 
-mailbox :: a -> N (B a, Address a)
+mailbox :: a -> N (B a, a -> IO ())
 mailbox a = do
     (mailbox, send) <- callbackStream
     signal <- sample $ fromChanges a mailbox
     return (signal, send)
 
-onEvent :: B (E a) -> (a -> Now ()) -> Now ()
+onEvent :: B (E a) -> (a -> N ()) -> N ()
 onEvent evs f = loop
   where
     loop :: Now ()
@@ -91,4 +93,22 @@ onEvent evs f = loop
         e <-  sample evs
         planNow $ (\a -> f a >> loop) <$> e
         return ()
+
+scanle :: (a -> b -> b)
+       -> b
+       -> N (B b, a -> IO ())
+scanle f start = do
+    (es, mb) <- callbackStream
+    folded   <- sample $ scanlEv (flip f) start es
+    b        <- sample $ fromChanges start folded
+    return (b, mb)
+
+newCollection :: Ord k
+              => Map k v
+              -> N ( k -> B (Maybe v)
+                   , k -> v -> IO ()
+                   )
+newCollection start = do
+    (b, mb) <- scanle (uncurry M.insert) start
+    return ((<$> b) . M.lookup, curry mb)
 

@@ -21,7 +21,7 @@ type Prop = Prop' ()
 square :: ( Member (Reader (Behavior Time)) r
           , Member (Reader (Behavior [Key])) r
           )
-       => Eff r (Now (Behavior Prop, Address (Prop -> Prop)))
+       => Eff r (Now (Behavior Prop, (Prop -> Prop) -> IO ()))
 square = do
     (clock :: Behavior Time) <- ask
     (keys :: Behavior [Key]) <- ask

@@ -37,10 +37,10 @@ square walls = do
 
 magic :: Engine -> Now (Behavior Prop)
 magic engine = do
-    clock      <- getElapsedClock
-    keyboard   <- getKeyboard
+    clock    <- getClock
+    keyboard <- getKeyboard
     let wall = filled blue $ circle (mkPos 35 35) 25
-    (sq, addr) <- run . flip runReader clock
+    (sq, addr) <- run . flip runReader (deltaTime clock)
                       . flip runReader keyboard
                       $ square [wall]
     poll $ do

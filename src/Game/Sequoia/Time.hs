@@ -1,7 +1,8 @@
 module Game.Sequoia.Time
     ( Time
     , getClock
-    , getElapsedClock
+    , totalTime
+    , deltaTime
     , fps
     ) where
 
@@ -17,17 +18,22 @@ import System.IO.Unsafe (unsafePerformIO)
 import System.Mem.Weak
 
 type Time = Double
+data Clock = Clock (B Time) (B Time)
 
-getClock :: N (B Time)
-getClock = poll $ sync getTime
-
-getElapsedClock :: N (B Time)
-getElapsedClock = do
-    clock <- getClock
-    sample $ do
+getClock :: N Clock
+getClock = do
+    clock <- poll $ sync getTime
+    elapsed <- sample $ do
         first <- sample clock
         last  <- prev first clock
         return $ (-) <$> clock <*> last
+    return $ Clock clock elapsed
+
+totalTime :: Clock -> B Time
+totalTime (Clock a _) = a
+
+deltaTime :: Clock -> B Time
+deltaTime (Clock _ a) = a
 
 getTime :: IO Time
 getTime = realToFrac <$> getPOSIXTime

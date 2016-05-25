@@ -1,5 +1,6 @@
 module Game.Sequoia.Time
     ( Time
+    , Clock ()
     , getClock
     , totalTime
     , deltaTime

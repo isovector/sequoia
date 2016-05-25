@@ -40,12 +40,12 @@ tag :: Piece a -> a
 tag (ShapePiece  a _) = a
 tag (StanzaPiece a _) = a
 
-findTag :: Prop' a -> (a -> Bool) -> (a -> b) -> [(Prop' a, b)]
-findTag p f t = map (first Leaf)
-              . map (second t)
-              . filter (f . snd)
-              . map (ap (,) tag)
-              $ toList p
+findTag :: (a -> Bool) -> (a -> b) -> Prop' a -> [(Prop' a, b)]
+findTag f t = map (first Leaf)
+            . map (second t)
+            . filter (f . snd)
+            . map (ap (,) tag)
+            . toList
 
 move :: Rel -> Prop' a -> Prop' a
 move rel = transform (liftShape $ moveShape rel) moveStanza

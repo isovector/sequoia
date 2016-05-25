@@ -3,6 +3,7 @@ module Game.Sequoia.Scene
     ( group
     , tagging
     , tag
+    , tags
     , findTag
     , move
     , rotate
@@ -39,6 +40,9 @@ tagging t = fmap $ \case
 tag :: Piece a -> a
 tag (ShapePiece  a _) = a
 tag (StanzaPiece a _) = a
+
+tags :: Prop' a -> [a]
+tags = fmap tag . toList
 
 findTag :: (a -> Bool) -> (a -> b) -> Prop' a -> [(Prop' a, b)]
 findTag f t = map (first Leaf)

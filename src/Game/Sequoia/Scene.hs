@@ -1,10 +1,9 @@
+{-# LANGUAGE LambdaCase #-}
 module Game.Sequoia.Scene
     ( group
-    , bake
-    , ungroup
-    , tags
+    , tagging
     , tag
-    , getTag
+    , findTag
     , move
     , rotate
     , scale
@@ -19,8 +18,10 @@ module Game.Sequoia.Scene
     , traced
     ) where
 
-import Control.Monad (join, guard)
+import Control.Arrow (first, second)
+import Control.Monad (join, guard, ap)
 import Data.Default (Default (), def)
+import Data.Foldable (toList)
 import Data.SG.Geometry.TwoDim
 import Data.SG.Shape
 import Game.Sequoia.Color (rgba)
@@ -28,35 +29,23 @@ import Game.Sequoia.Types
 import Game.Sequoia.Utils
 
 group :: [Prop' a] -> Prop' a
-group = GroupProp
+group = Branch
 
-tags :: (a -> a) -> Prop' a -> Prop' a
-tags t (GroupProp ps)   = GroupProp $ map (tags t) ps
-tags t (ShapeProp a f)  = ShapeProp (t a) f
-tags t (BakedProp a fs) = BakedProp (t a) fs
+tagging :: (a -> a) -> Prop' a -> Prop' a
+tagging t = fmap $ \case
+    ShapePiece  a f -> ShapePiece  (t a) f
+    StanzaPiece a f -> StanzaPiece (t a) f
 
-tag :: a -> Prop' a -> Prop' a
-tag = tags . const
+tag :: Piece a -> a
+tag (ShapePiece  a _) = a
+tag (StanzaPiece a _) = a
 
-getTag :: Default a => Prop' a -> a
-getTag (GroupProp _)   = def
-getTag (ShapeProp a _) = a
-getTag (BakedProp a _) = a
-
-bake :: Default a => [Prop' a] -> Prop' a
-bake ps = BakedProp def . join $ map getForms ps
-  where
-    getForms (GroupProp ps)   = join $ map getForms ps
-    getForms (ShapeProp _ f)  = return f
-    getForms (BakedProp _ fs) = fs
-
--- |Groups don't have tags, so some algorithms might go pear-shaped if you
--- don't ungroup the scene first.
-ungroup :: [Prop' a] -> [Prop' a]
-ungroup = join . map ungroup'
-  where
-    ungroup' (GroupProp ps) = ungroup ps
-    ungroup' a = return a
+findTag :: Prop' a -> (a -> Bool) -> (a -> b) -> [(Prop' a, b)]
+findTag p f t = map (first Leaf)
+              . map (second t)
+              . filter (f . snd)
+              . map (ap (,) tag)
+              $ toList p
 
 move :: Rel -> Prop' a -> Prop' a
 move rel = transform (liftShape $ moveShape rel) moveStanza
@@ -80,10 +69,9 @@ teleport pos = transform (liftShape $ teleportShape pos) teleportStanza
     teleportStanza s   = s { stanzaCentre = pos }
 
 transform :: (Form -> Form) -> (Stanza -> Stanza) -> Prop' a -> Prop' a
-transform t u (GroupProp ps)  = GroupProp   $ map (transform t u) ps
-transform t _ (ShapeProp a f) = ShapeProp a $ t f
-transform t _ (BakedProp a f) = BakedProp a $ map t f
-transform _ t (StanzaProp s)  = StanzaProp  $ t s
+transform sh st = fmap $ \case
+    ShapePiece a f  -> ShapePiece  a $ sh f
+    StanzaPiece a s -> StanzaPiece a $ st s
 
 liftShape :: (Shape -> Shape) -> Form -> Form
 liftShape t (Form fs s) = Form fs $ t s
@@ -98,7 +86,7 @@ circle :: Pos -> Double -> Shape
 circle = Circle
 
 toShape :: Default a => Maybe FillStyle -> Maybe LineStyle -> Shape -> Prop' a
-toShape fs ls = ShapeProp def . Form (Style fs ls)
+toShape fs ls = Leaf . ShapePiece def . Form (Style fs ls)
 
 refill :: Color -> Prop' a -> Prop' a
 refill c = transform

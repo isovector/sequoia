@@ -1,3 +1,5 @@
+{-# LANGUAGE RecordWildCards #-}
+
 module Game.Sequoia.Geometry
     ( center
     , sweepLine
@@ -7,6 +9,7 @@ module Game.Sequoia.Geometry
     ) where
 
 import Control.Monad (join, guard)
+import Data.Foldable (toList)
 import Data.SG.Geometry.TwoDim
 import Data.SG.Shape
 import Data.Maybe (isJust, fromJust)
@@ -14,11 +17,9 @@ import Game.Sequoia.Scene
 import Game.Sequoia.Types
 import Game.Sequoia.Utils
 
-getShapes :: Prop' a -> [(Prop' a, Shape)]
-getShapes   (GroupProp ps)   = join $ map getShapes ps
-getShapes p@(ShapeProp _ f)  = return $ (p, getShape f)
-getShapes p@(BakedProp _ fs) = zip (repeat p) $ map getShape fs
-getShapes (StanzaProp _)     = []
+getShapes :: Piece a -> [(Piece a, Shape)]
+getShapes p@(ShapePiece _ f)  = return $ (p, getShape f)
+getShapes (StanzaPiece _ _)   = []
 
 getShape :: Form -> Shape
 getShape (Form _ s) = s
@@ -26,54 +27,64 @@ getShape (Form _ s) = s
 between :: Ord a => a -> a -> a -> Bool
 between a b x = a <= x && x <= b
 
-center :: Prop' a -> Pos
-center (ShapeProp _ (Form _ s)) = shapeCentre s
--- TODO(sandy): do better than this
-center _ = error "you can't get the center of NOTHING"
+centerOf :: Piece a -> Pos
+centerOf (ShapePiece _ (Form _ s))  = shapeCentre s
+centerOf (StanzaPiece _ Stanza{..}) = stanzaCentre
 
-sweepLine :: [Prop' a] -> Pos -> Rel -> [Prop' a]
-sweepLine ps pos rel =
+center :: Prop' a -> Pos
+center (Leaf l) = centerOf l
+center b =
+    let (c, n) = foldr (\a (c, n) -> (posDif (centerOf a) origin + c, 1 + n))
+                       ((rel 0 0, 0) :: (Rel, Double))
+                       b
+     in plusDir origin $ scaleRel (1/n) c
+
+sweepLine :: [Piece a] -> Pos -> Rel -> [Piece a]
+sweepLine ps pos rel = do
     let line = Line2 pos rel
         shapes = join $ map getShapes ps
-     in do
-            (p, s) <- shapes
-            let mayIntersect = intersectLineShape line s
-            guard $ isJust mayIntersect
-            let intersect = fromJust mayIntersect
-                p1 = fst intersect
-                p2 = snd intersect
-            guard $ between 0 1 p1 || between 0 1 p2
-            return p
+    (p, s) <- shapes
+    let mayIntersect = intersectLineShape line s
+    guard $ isJust mayIntersect
+    let intersect = fromJust mayIntersect
+        p1 = fst intersect
+        p2 = snd intersect
+    guard $ between 0 1 p1 || between 0 1 p2
+    return p
 
-overlapping :: [Prop' a] -> Prop' a -> [Prop' a]
-overlapping ps c =
+overlapping :: [Piece a] -> Prop' a -> [Piece a]
+overlapping ps prop = do
+    c <- toList prop
     let shapes = join $ map getShapes ps
         cshapes = getShapes c
-     in do
-           -- TODO(sandy): we can do a quick BB test instead of this fanout
-           (p, s)  <- shapes
-           (_, cs) <- cshapes
-           -- TODO(sandy): overlap seems to think triangles are rects
-           guard . isJust $ overlap s cs
-           return p
+    -- TODO(sandy): we can do a quick BB test instead of this fanout
+    (p, s)  <- shapes
+    (_, cs) <- cshapes
+    -- TODO(sandy): overlap seems to think triangles are rects
+    guard . isJust $ overlap s cs
+    return p
 
-sweepProp :: [Prop' a] -> Prop' a -> Rel -> [Prop' a]
-sweepProp ps p rel =
-    let pos = center p
-     in sweepLine ps pos rel ++ overlapping ps (move rel p)
+sweepProp :: [Prop' a] -> Prop' a -> Rel -> [Piece a]
+sweepProp pps prop rel = do
+    let ps = join $ fmap toList pps
+    p <- toList prop
+    let pos = centerOf p
+    sweepLine ps pos rel ++ overlapping ps (move rel prop)
 
 tryMove :: [Prop' a] -> [Prop' a] -> Prop' a -> Rel -> Prop' a
-tryMove walls floors p rel
-  | rel == origin = p
+tryMove walls' floors ps rel
+  | rel == origin = ps
   | otherwise =
-    let pos = center p
+    let walls = join $ fmap toList walls'
+        pos = center ps
+        p = toList ps
         -- TODO(sandy): make this a real sweep
         hitWalls = sweepLine walls pos rel
-        hitFloors = sweepProp floors p rel
+        hitFloors = sweepProp floors ps rel
         inClear = null hitWalls
         onFloor = null floors || not (null hitFloors)
         canMove = inClear && onFloor
      in if canMove
-           then move rel p
-           else p
+           then move rel ps
+           else ps
 

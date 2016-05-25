@@ -777,7 +777,7 @@ liftArrows uk lk dk rk keys =
             <*> isDown keys dk
             <*> isDown keys rk
   where
-    liftSig u l d r = uncurry mkRel $ mapT fromIntegral
+    liftSig u l d r = uncurry rel $ mapT fromIntegral
         (- 1 * fromEnum l + 1 * fromEnum r
         , -1 * fromEnum u + 1 * fromEnum d
         )

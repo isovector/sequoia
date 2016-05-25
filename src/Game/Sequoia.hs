@@ -70,7 +70,7 @@ startup (EngineConfig { .. }) = withCAString windowTitle $ \title -> do
 
 play :: EngineConfig
      -> (Engine -> N i)
-     -> (i -> N (B [Prop' a]))
+     -> (i -> N (B (Prop' a)))
      -> IO ()
 play cfg init sceneN = do
     runNowMaster $ do
@@ -81,7 +81,7 @@ play cfg init sceneN = do
         sample $ whenE quit
     SDL.quit
 
-wantsQuit :: Engine -> B [Prop' a] -> B (Int, Int) -> N Bool
+wantsQuit :: Engine -> B (Prop' a) -> B (Int, Int) -> N Bool
 wantsQuit engine sceneSig dimSig = do
     scene <- sample sceneSig
     dims  <- sample dimSig
@@ -89,7 +89,7 @@ wantsQuit engine sceneSig dimSig = do
         render engine scene dims
         SDL.quitRequested
 
-render :: Engine -> [Prop' a] -> (Int, Int) -> IO ()
+render :: Engine -> Prop' a -> (Int, Int) -> IO ()
 render e@(Engine { .. }) ps size@(w, h) =
     alloca $ \pixelsptr ->
     alloca $ \pitchptr  -> do
@@ -121,7 +121,7 @@ render e@(Engine { .. }) ps size@(w, h) =
         SDL.destroyTexture texture
         SDL.renderPresent renderer
 
-render' :: [Prop' a] -> (Int, Int) -> Cairo.Render ()
+render' :: Prop' a -> (Int, Int) -> Cairo.Render ()
 render' ps size = do
     Cairo.setSourceRGB 0 0 0
     uncurry (Cairo.rectangle 0 0) $ mapT fromIntegral size
@@ -132,11 +132,9 @@ render' ps size = do
     mapM_ renderProp ps
     Cairo.restore
 
-renderProp :: Prop' a -> Cairo.Render ()
-renderProp (GroupProp f)   = mapM_ renderProp f
-renderProp (ShapeProp _ f) = renderForm f
-renderProp (BakedProp _ f) = mapM_ renderForm f
-renderProp (StanzaProp s) = renderStanza s
+renderProp :: Piece a -> Cairo.Render ()
+renderProp (ShapePiece _ f)  = renderForm f
+renderProp (StanzaPiece _ s) = renderStanza s
 
 renderStanza :: Stanza -> Cairo.Render ()
 renderStanza (Stanza { .. }) = do

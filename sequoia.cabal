@@ -27,7 +27,7 @@ executable sequoia
   default-language:    Haskell2010
 
 library
-  ghc-options:         -fwarn-incomplete-patterns
+  ghc-options:         -fwarn-incomplete-patterns -Wall
   exposed-modules:     Game.Sequoia.Signal,
                        Game.Sequoia.Combinators,
                        Game.Sequoia.Scene,

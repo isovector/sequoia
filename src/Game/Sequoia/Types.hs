@@ -1,9 +1,15 @@
+{-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE DeriveFoldable #-}
+{-# LANGUAGE DeriveFunctor #-}
+
 module Game.Sequoia.Types
-    ( Pos
+    ( Tree (..)
+    , Prop'
+    , Pos
     , Rel
     , Shape
     , Form (..)
-    , Prop' (..)
+    , Piece (..)
     , Color (..)
     , FillStyle (..)
     , LineCap (..)
@@ -18,7 +24,7 @@ module Game.Sequoia.Types
     , mkPos
     , unpackPos
     , origin
-    , mkRel
+    , rel
     , scaleRel
     , plusDir
     , posDif
@@ -37,6 +43,22 @@ import Data.SG.Shape
 import Data.SG.Vector
 import Game.Sequoia.Color
 import Data.Text (Text)
+
+data Tree a = Leaf a
+            | Branch [Tree a]
+            deriving ( Functor, Read, Show
+                     , Foldable, Traversable, Eq
+                     )
+
+instance Applicative Tree where
+    pure = Leaf
+    Leaf f <*> b   = fmap f b
+    a <*> Leaf b   = fmap ($ b) a
+    a <*> Branch b = Branch $ fmap (a <*>) b
+
+instance Monad Tree where
+    Leaf a   >>= f = f a
+    Branch a >>= f = Branch $ fmap (>>= f) a
 
 type Pos = Point2' Double
 type Rel = Rel2' Double
@@ -106,17 +128,17 @@ data Style = Style (Maybe FillStyle) (Maybe LineStyle)
 data Form = Form Style Shape
     deriving (Show, Eq)
 
-data Prop' a = ShapeProp a  Form
-             | BakedProp a [Form]
-             | GroupProp [Prop' a]
-             | StanzaProp Stanza
+data Piece a = ShapePiece  a Form
+             | StanzaPiece a Stanza
              deriving (Show, Eq)
+
+type Prop' a = Tree (Piece a)
 
 mkPos :: Double -> Double -> Pos
 mkPos x y = Point2 (x, y)
 
-mkRel :: Double -> Double -> Rel
-mkRel x y = makeRel2 (x, y)
+rel :: Double -> Double -> Rel
+rel x y = makeRel2 (x, y)
 
 unpackPos :: Pos -> (Double, Double)
 unpackPos (Point2 pos) = pos

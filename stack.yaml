@@ -2,9 +2,9 @@ packages:
 - '.'
 - location:
     git: https://github.com/isovector/SG.git
-    commit: 22d733e62b085209979d4dc05d8e6e94d4cb1a8d
+    commit: f8427079ed6dbbd7b9dd3fd5fdecdf2d0087847a
 
-resolver: lts-5.2
+resolver: lts-7.1
 extra-deps:
     - sdl2-1.2.0
     - frpnow-0.18

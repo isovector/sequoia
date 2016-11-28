@@ -143,15 +143,15 @@ rel x y = makeRel2 (x, y)
 unpackPos :: Pos -> (Double, Double)
 unpackPos (Point2 pos) = pos
 
-posDif :: Pos -> Pos -> Rel
+posDif :: (Geometry rel pt ln, Num a) => pt a -> pt a -> rel a
 posDif = fromPt
 
-normalize :: Rel -> Rel
+normalize :: (Coord p, VectorNum p, Ord a, Floating a) => p a -> p a
 normalize = unitVector
 
-distance :: Pos -> Pos -> Double
+distance :: (VectorNum pt, Coord pt, Floating a) => pt a -> pt a -> a
 distance = distFrom
 
-dot :: Rel -> Rel -> Double
+dot :: (Coord p, Num a) => p a -> p a -> a
 dot = dotProduct
 

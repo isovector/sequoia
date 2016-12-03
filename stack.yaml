@@ -2,7 +2,7 @@ packages:
 - '.'
 - location:
     git: https://github.com/isovector/SG.git
-    commit: 222c4e42b4b8574182e24430bc1722faeb9ef508
+    commit: fe733adab45bf6abb1a1a9457f398b96fe643e68
 
 resolver: lts-7.1
 extra-deps:

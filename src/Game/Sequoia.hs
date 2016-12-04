@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 
 -- Strongly inspired by Helm.
 -- See: http://helm-engine.org
@@ -17,34 +18,28 @@ module Game.Sequoia
     , rgba
     ) where
 
-import Control.Applicative
-import Control.Monad (when, forM_)
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.State (evalStateT)
-import Data.Bits ((.|.))
-import Data.IORef (IORef, newIORef, writeIORef, readIORef)
-import Data.SG.Shape
-import Foreign.C.String (withCAString)
-import Foreign.Marshal.Alloc (alloca)
-import Foreign.Ptr (nullPtr, castPtr)
-import Foreign.Storable (peek)
-import Game.Sequoia.Color
-import Game.Sequoia.Engine
-import Game.Sequoia.Geometry
-import Game.Sequoia.Scene
-import Game.Sequoia.Signal
-import Game.Sequoia.Time
-import Game.Sequoia.Types
-import Game.Sequoia.Utils
-import Game.Sequoia.Window
-import System.Endian (fromBE32)
-import System.IO.Unsafe (unsafePerformIO)
-import qualified Data.Map as M
+import           Control.Applicative
+import           Control.Monad (forM_)
+import           Data.Bits ((.|.))
+import           Data.SG.Shape
 import qualified Data.Text as T
-import qualified Game.Sequoia.Window as Window
+import           Foreign.C.String (withCAString)
+import           Foreign.Marshal.Alloc (alloca)
+import           Foreign.Ptr (nullPtr, castPtr)
+import           Foreign.Storable (peek)
+import           Game.Sequoia.Color
+import           Game.Sequoia.Engine
+import           Game.Sequoia.Geometry
+import           Game.Sequoia.Scene
+import           Game.Sequoia.Signal
+import           Game.Sequoia.Time
+import           Game.Sequoia.Types
+import           Game.Sequoia.Utils
+import           Game.Sequoia.Window
 import qualified Graphics.Rendering.Cairo as Cairo
 import qualified Graphics.Rendering.Pango as Pango
 import qualified Graphics.UI.SDL as SDL
+import           System.Endian (fromBE32)
 
 data EngineConfig = EngineConfig
   { windowDimensions :: (Int, Int)
@@ -77,10 +72,10 @@ play :: EngineConfig
      -> (Engine -> N i)
      -> (i -> N (B (Prop' a)))
      -> IO ()
-play cfg init sceneN = do
+play cfg initial sceneN = do
     runNowMaster $ do
         engine   <- sync $ startup cfg
-        sceneSig <- init engine >>= sceneN
+        sceneSig <- initial engine >>= sceneN
         dimSig   <- getDimensions engine
         quit     <- poll $ wantsQuit engine sceneSig dimSig
         sample $ whenE quit
@@ -95,7 +90,7 @@ wantsQuit engine sceneSig dimSig = do
         SDL.quitRequested
 
 render :: Engine -> Prop' a -> (Int, Int) -> IO ()
-render e@(Engine { .. }) ps size@(w, h) =
+render (Engine { .. }) ps size@(w, h) =
     alloca $ \pixelsptr ->
     alloca $ \pitchptr  -> do
         format <- SDL.masksToPixelFormatEnum 32 (fromBE32 0x0000ff00)
@@ -153,7 +148,7 @@ renderStanza (Stanza { .. }) = do
         , Pango.AttrSize   { paStart = i, paEnd = j, paSize = stanzaHeight }
         ]
 
-    Pango.PangoRectangle x y w h <- fmap snd . Cairo.liftIO
+    Pango.PangoRectangle _ _ w h <- fmap snd . Cairo.liftIO
                                              $ Pango.layoutGetExtents layout
 
     unpackFor stanzaCentre Cairo.moveTo
@@ -188,8 +183,8 @@ renderForm (Form (Style mfs mls) s) = do
           Cairo.rectangle (x - w/2) (y - h/2) w h
 
       Polygon { .. } -> do
-          forM_ polyPoints $ \rel -> do
-              let pos = plusDir shapeCentre rel
+          forM_ polyPoints $ \r -> do
+              let pos = plusDir shapeCentre r
               unpackFor pos Cairo.lineTo
           Cairo.closePath
 

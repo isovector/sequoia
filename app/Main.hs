@@ -53,5 +53,5 @@ magic engine = do
         sq' <- sq
         return $ group [sq', wall]
 
-main = play (EngineConfig (640, 480) "hello") magic return
+main = play (EngineConfig (640, 480) "hello" black) magic return
 

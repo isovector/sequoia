@@ -1,9 +1,12 @@
+{-# LANGUAGE DeriveFoldable    #-}
+{-# LANGUAGE DeriveFunctor     #-}
 {-# LANGUAGE DeriveTraversable #-}
-{-# LANGUAGE DeriveFoldable #-}
-{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE PatternSynonyms   #-}
 
 module Game.Sequoia.Types
-    ( Tree (..)
+    ( Tree
+    , pattern Leaf
+    , pattern Branch
     , Prop'
     , Pos
     , Rel
@@ -37,6 +40,7 @@ module Game.Sequoia.Types
     , getY
     ) where
 
+import Control.Monad.Free
 import Data.SG.Geometry
 import Data.SG.Geometry.TwoDim
 import Data.SG.Shape
@@ -44,21 +48,9 @@ import Data.SG.Vector
 import Game.Sequoia.Color
 import Data.Text (Text)
 
-data Tree a = Leaf a
-            | Branch [Tree a]
-            deriving ( Functor, Read, Show
-                     , Foldable, Traversable, Eq
-                     )
-
-instance Applicative Tree where
-    pure = Leaf
-    Leaf f <*> b   = fmap f b
-    a <*> Leaf b   = fmap ($ b) a
-    a <*> Branch b = Branch $ fmap (a <*>) b
-
-instance Monad Tree where
-    Leaf a   >>= f = f a
-    Branch a >>= f = Branch $ fmap (>>= f) a
+type Tree = Free []
+pattern Leaf a = Pure a
+pattern Branch a = Free a
 
 type Pos = Point2' Double
 type Rel = Rel2' Double

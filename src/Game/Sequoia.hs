@@ -13,6 +13,8 @@ module Game.Sequoia
     , module Game.Sequoia.Time
     , module Game.Sequoia.Types
     , Engine ()
+    , rgb
+    , rgba
     ) where
 
 import Control.Applicative
@@ -26,6 +28,7 @@ import Foreign.C.String (withCAString)
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Ptr (nullPtr, castPtr)
 import Foreign.Storable (peek)
+import Game.Sequoia.Color
 import Game.Sequoia.Engine
 import Game.Sequoia.Geometry
 import Game.Sequoia.Scene
@@ -43,12 +46,13 @@ import qualified Graphics.Rendering.Cairo as Cairo
 import qualified Graphics.Rendering.Pango as Pango
 import qualified Graphics.UI.SDL as SDL
 
-data EngineConfig = EngineConfig {
-  windowDimensions :: (Int, Int),
+data EngineConfig = EngineConfig
+  { windowDimensions :: (Int, Int)
   -- windowIsFullscreen :: Bool,
   -- windowIsResizable :: Bool,
-  windowTitle :: String
-}
+  , windowTitle :: String
+  , windowColor :: Color
+  }
 
 startup :: EngineConfig -> IO Engine
 startup (EngineConfig { .. }) = withCAString windowTitle $ \title -> do
@@ -63,9 +67,10 @@ startup (EngineConfig { .. }) = withCAString windowTitle $ \title -> do
 
     window   <- SDL.createWindow title 0 0 w h wflags
     renderer <- SDL.createRenderer window (-1) rflags
-    return Engine { window   = window
-                  , renderer = renderer
-                  , continue = True
+    return Engine { window    = window
+                  , renderer  = renderer
+                  , continue  = True
+                  , backColor = windowColor
                   }
 
 play :: EngineConfig
@@ -114,7 +119,11 @@ render e@(Engine { .. }) ps size@(w, h) =
             (fromIntegral h)
             pitch
             $ \surface ->
-                Cairo.renderWith surface $ render' ps size
+                Cairo.renderWith surface $ do
+                  unpackColFor backColor Cairo.setSourceRGBA
+                  uncurry (Cairo.rectangle 0 0) $ mapT fromIntegral size
+                  Cairo.fill
+                  render' ps size
         SDL.unlockTexture texture
         SDL.renderClear renderer
         SDL.renderCopy renderer texture nullPtr nullPtr
@@ -123,10 +132,6 @@ render e@(Engine { .. }) ps size@(w, h) =
 
 render' :: Prop' a -> (Int, Int) -> Cairo.Render ()
 render' ps size = do
-    Cairo.setSourceRGB 0 0 0
-    uncurry (Cairo.rectangle 0 0) $ mapT fromIntegral size
-    Cairo.fill
-
     Cairo.save
     uncurry Cairo.translate $ mapT ((/ 2) . fromIntegral) size
     mapM_ renderProp ps

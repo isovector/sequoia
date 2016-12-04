@@ -10,14 +10,11 @@ module Game.Sequoia.Keyboard
     , wasd
     ) where
 
-import Control.Applicative
 import Control.FRPNow.EvStream
 import Data.List (elemIndices)
 import Foreign hiding (shift)
 import Foreign.C.Types (CInt)
 import Game.Sequoia
-import Game.Sequoia.Signal
-import Game.Sequoia.Types
 import Game.Sequoia.Utils
 
 foreign import ccall unsafe "SDL_GetKeyboardState" sdlGetKeyState
@@ -724,7 +721,7 @@ instance Enum Key where
     toEnum 226 = LeftAltKey
     toEnum 227 = LeftMetaKey
     toEnum 228 = RightControlKey
-    toEnum 299 = RightShiftKey
+    toEnum 229 = RightShiftKey
     toEnum 230 = RightAltKey
     toEnum 231 = RightMetaKey
     toEnum 257 = ModeKey
@@ -755,7 +752,7 @@ instance Enum Key where
     toEnum 282 = SleepKey
     toEnum 283 = App1Key
     toEnum 284 = App2Key
-    toEnum _ = error "Game.Sequoia.Keyboard.Key.toEnum: bad argument"
+    toEnum x = error $ "Game.Sequoia.Keyboard.Key.toEnum: bad argument " ++ show x
 
 getKeyboard :: N (B [Key])
 getKeyboard = poll . sync $ map toEnum <$> getKeyState

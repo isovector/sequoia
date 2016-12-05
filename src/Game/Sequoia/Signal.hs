@@ -12,12 +12,12 @@ module Game.Sequoia.Signal
     , onEvent
     , scanle
     , newCollection
-    -- TODO(sandy): remove these after the migration
     , B
     , N
     , E
     ) where
 
+import Control.Monad (void)
 import Control.FRPNow.Core
 import Control.FRPNow.EvStream
 import Control.FRPNow.Lib hiding (when, first)
@@ -69,20 +69,20 @@ poll io = loop
         return $ step a e'
 
 pollFold :: N a -> (a -> N a) -> N (B a)
-pollFold init io = do
-    first <- init
+pollFold initial io = do
+    first <- initial
     loop first
   where
-    loop prev = do
+    loop a = do
         e  <- async (return ())
-        a  <- io prev
-        e' <- planNow $ loop a <$ e
-        return $ step a e'
+        a'  <- io a
+        e' <- planNow $ loop a' <$ e
+        return $ step a' e'
 
 mailbox :: a -> N (B a, a -> IO ())
 mailbox a = do
-    (mailbox, send) <- callbackStream
-    signal <- sample $ fromChanges a mailbox
+    (mb, send) <- callbackStream
+    signal <- sample $ fromChanges a mb
     return (signal, send)
 
 onEvent :: B (E a) -> (a -> N ()) -> N ()
@@ -91,8 +91,7 @@ onEvent evs f = loop
     loop :: Now ()
     loop = do
         e <-  sample evs
-        planNow $ (\a -> f a >> loop) <$> e
-        return ()
+        void $ planNow $ (\a -> f a >> loop) <$> e
 
 scanle :: (a -> b -> b)
        -> b

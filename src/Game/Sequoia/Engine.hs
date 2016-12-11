@@ -4,7 +4,7 @@ module Game.Sequoia.Engine
 
 import Game.Sequoia.Color
 import Game.Sequoia.Signal
-import qualified Graphics.UI.SDL as SDL
+import qualified SDL.Raw as SDL
 
 data Engine = Engine
     { window    :: SDL.Window

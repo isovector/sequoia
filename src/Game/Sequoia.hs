@@ -38,7 +38,7 @@ import           Game.Sequoia.Utils
 import           Game.Sequoia.Window
 import qualified Graphics.Rendering.Cairo as Cairo
 import qualified Graphics.Rendering.Pango as Pango
-import qualified Graphics.UI.SDL as SDL
+import qualified SDL.Raw as SDL
 import           System.Endian (fromBE32)
 
 data EngineConfig = EngineConfig
@@ -53,12 +53,12 @@ startup :: EngineConfig -> IO Engine
 startup (EngineConfig { .. }) = withCAString windowTitle $ \title -> do
     let (w, h) = mapT fromIntegral windowDimensions
         wflags = foldl (.|.) 0 $
-            [ SDL.windowFlagShown
-            -- , SDL.windowFlagResizable  | windowIsResizable
-            -- , SDL.windowFlagFullscreen | windowIsFullscreen
+            [ SDL.SDL_WINDOW_SHOWN
+            -- , SDL.SDL_WINDOW_RESIZABLE  | windowIsResizable
+            -- , SDL.SDL_WINDOW_FULLSCREEN | windowIsFullscreen
             ]
-        rflags = SDL.rendererFlagPresentVSync .|.
-                 SDL.rendererFlagAccelerated
+        rflags = SDL.SDL_RENDERER_PRESENTVSYNC .|.
+                 SDL.SDL_RENDERER_ACCELERATED
 
     window   <- SDL.createWindow title 0 0 w h wflags
     renderer <- SDL.createRenderer window (-1) rflags
@@ -101,7 +101,7 @@ render (Engine { .. }) ps size@(w, h) =
             SDL.createTexture
                 renderer
                 format
-                SDL.textureAccessStreaming
+                SDL.SDL_TEXTUREACCESS_STREAMING
                 (fromIntegral w)
                 (fromIntegral h)
         SDL.lockTexture texture nullPtr pixelsptr pitchptr

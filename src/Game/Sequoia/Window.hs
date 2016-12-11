@@ -10,7 +10,7 @@ import Foreign.Storable
 import GHC.Ptr (Ptr)
 import Game.Sequoia.Engine
 import Game.Sequoia.Signal
-import qualified Graphics.UI.SDL as SDL
+import qualified SDL.Raw as SDL
 
 getDimensions :: Engine -> N (B (Int, Int))
 getDimensions = liftWindow SDL.getWindowSize

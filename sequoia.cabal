@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                sequoia
-version:             0.1.0.0
+version:             0.1.1.0
 -- synopsis:
 -- description:
 license:             BSD3
@@ -52,7 +52,7 @@ library
                        transformers,
                        SG,
                        containers,
-                       sdl2,
+                       sdl2 >= 2.1.3 && < 2.2,
                        cairo,
                        pango,
                        cpu,

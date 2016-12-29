@@ -195,7 +195,7 @@ renderForm (Form (Style mfs lfs) s) = do
     mapM_ setLineStyle lfs
     mapM_ setFillStyle mfs
 
-renderForm (Form (Textured cairoSurface _ _) s) = do
+renderForm (Form (Textured cairoSurface iw _) s) = do
     Cairo.newPath
     Cairo.setSourceSurface cairoSurface 0 0
     source <- Cairo.getSource
@@ -204,8 +204,10 @@ renderForm (Form (Textured cairoSurface _ _) s) = do
       Rectangle { .. } -> do
           let (w, h) = mapT (*2) rectSize
               (x, y) = unpackPos shapeCentre
+              scale = iw / w
           Cairo.rectangle (x - w/2) (y - h/2) w h
           Cairo.patternSetMatrix source
+            $ Matrix.scale scale scale
             $ Matrix.translate (-w/2) (-h/2)
             $ Matrix.identity
 
@@ -214,15 +216,19 @@ renderForm (Form (Textured cairoSurface _ _) s) = do
               let pos = plusDir shapeCentre r
               unpackFor pos Cairo.lineTo
 
-          let (  (Rel2 (p1x,p1y) _)
-               : (Rel2 (p2x,p2y) _)
+          let (  p1@(Rel2 (p1x,p1y) _)
+               : p2@(Rel2 (p2x,p2y) _)
                : _) = polyPoints
+
+              w = distance p1 p2
+              scale = iw / w
 
           let rotation = Matrix.rotate (negate $ atan2 (p2y-p1y) (p2x-p1x))
                        $ Matrix.identity
               p1' = Matrix.transformPoint rotation (-p1x, -p1y)
 
           Cairo.patternSetMatrix source
+            $ Matrix.scale scale scale
             $ uncurry Matrix.translate p1'
             $ rotation
           Cairo.closePath

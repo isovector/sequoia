@@ -38,7 +38,7 @@ magic baller _ = do
 
     return $ do
         now <- sample $ totalTime clock
-        return $ group [rotate now baller]
+        return $ group [rotate now $ scale (abs $ sin now * 2) baller]
 
 main :: IO ()
 main = withTexture "app/baller.png" $ \baller ->

@@ -40,13 +40,14 @@ module Game.Sequoia.Types
     , getY
     ) where
 
-import Control.Monad.Free
-import Data.SG.Geometry
-import Data.SG.Geometry.TwoDim
-import Data.SG.Shape
-import Data.SG.Vector
-import Game.Sequoia.Color
-import Data.Text (Text)
+import           Control.Monad.Free
+import           Data.SG.Geometry
+import           Data.SG.Geometry.TwoDim
+import           Data.SG.Shape
+import           Data.SG.Vector
+import           Data.Text (Text)
+import           Game.Sequoia.Color
+import qualified Graphics.Rendering.Cairo as Cairo
 
 type Tree = Free []
 pattern Leaf a = Pure a
@@ -115,7 +116,14 @@ data FillStyle = Solid Color
     deriving (Show, Eq)
 
 data Style = Style (Maybe FillStyle) (Maybe LineStyle)
-    deriving (Show, Eq)
+           | Textured Cairo.Surface Double Double
+
+instance Show Style where
+  show _ = "Style"
+
+instance Eq Style where
+  (Style a b)  == (Style a' b')   = a == a' && b == b'
+  _            == _               = False
 
 data Form = Form Style Shape
     deriving (Show, Eq)

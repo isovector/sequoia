@@ -3,7 +3,6 @@ module Game.Sequoia.Engine
     ) where
 
 import Game.Sequoia.Color
-import Game.Sequoia.Signal
 import qualified SDL.Raw as SDL
 
 data Engine = Engine

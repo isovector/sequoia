@@ -21,6 +21,7 @@ module Game.Sequoia
 import           Control.Applicative
 import           Control.Monad (forM_)
 import           Data.Bits ((.|.))
+import           Data.SG.Geometry.TwoDim (Rel2' (..))
 import           Data.SG.Shape
 import qualified Data.Text as T
 import           Foreign.C.String (withCAString)
@@ -37,6 +38,7 @@ import           Game.Sequoia.Types
 import           Game.Sequoia.Utils
 import           Game.Sequoia.Window
 import qualified Graphics.Rendering.Cairo as Cairo
+import qualified Graphics.Rendering.Cairo.Matrix as Matrix
 import qualified Graphics.Rendering.Pango as Pango
 import qualified SDL.Raw as SDL
 import           System.Endian (fromBE32)
@@ -174,7 +176,7 @@ renderStanza (Stanza { .. }) = do
           ItalicStyle  -> Pango.StyleItalic
 
 renderForm :: Form -> Cairo.Render ()
-renderForm (Form (Style mfs mls) s) = do
+renderForm (Form (Style mfs lfs) s) = do
     Cairo.newPath
     case s of
       Rectangle { .. } -> do
@@ -190,8 +192,43 @@ renderForm (Form (Style mfs mls) s) = do
 
       Circle { .. } -> do
           unpackFor shapeCentre Cairo.arc circSize 0 (pi * 2)
+    mapM_ setLineStyle lfs
     mapM_ setFillStyle mfs
-    mapM_ setLineStyle mls
+
+renderForm (Form (Textured cairoSurface _ _) s) = do
+    Cairo.newPath
+    Cairo.setSourceSurface cairoSurface 0 0
+    source <- Cairo.getSource
+    Cairo.patternSetExtend source Cairo.ExtendRepeat
+    case s of
+      Rectangle { .. } -> do
+          let (w, h) = mapT (*2) rectSize
+              (x, y) = unpackPos shapeCentre
+          Cairo.rectangle (x - w/2) (y - h/2) w h
+          Cairo.patternSetMatrix source
+            $ Matrix.translate (-w/2) (-h/2)
+            $ Matrix.identity
+
+      Polygon { .. } -> do
+          forM_ polyPoints $ \r -> do
+              let pos = plusDir shapeCentre r
+              unpackFor pos Cairo.lineTo
+
+          let (  (Rel2 (p1x,p1y) _)
+               : (Rel2 (p2x,p2y) _)
+               : _) = polyPoints
+
+          let rotation = Matrix.rotate (negate $ atan2 (p2y-p1y) (p2x-p1x))
+                       $ Matrix.identity
+              p1' = Matrix.transformPoint rotation (-p1x, -p1y)
+
+          Cairo.patternSetMatrix source
+            $ uncurry Matrix.translate p1'
+            $ rotation
+          Cairo.closePath
+
+      Circle { .. } -> error "texture can't be a circle"
+    Cairo.fillPreserve
 
 setLineStyle :: LineStyle -> Cairo.Render ()
 setLineStyle (LineStyle { .. }) = do

@@ -9,14 +9,11 @@ module Game.Sequoia.Time
 
 import Control.Applicative ((<$>))
 import Control.FRPNow.Core
-import Control.FRPNow.EvStream
-import Control.FRPNow.Lib
-import Control.Monad.IO.Class (liftIO)
+import Control.FRPNow.Lib hiding (first)
 import Data.Function (on)
 import Data.Time.Clock.POSIX (getPOSIXTime)
 import Game.Sequoia.Signal
-import System.IO.Unsafe (unsafePerformIO)
-import System.Mem.Weak
+import Prelude hiding (last)
 
 type Time = Double
 data Clock = Clock (B Time) (B Time)

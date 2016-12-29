@@ -17,17 +17,17 @@ module Game.Sequoia.Scene
     , invisible
     , styled
     , traced
+    , withTexture
     ) where
 
-import Control.Arrow (first, second)
-import Control.Monad (join, guard, ap)
-import Data.Default (Default (), def)
-import Data.Foldable (toList)
-import Data.SG.Geometry.TwoDim
-import Data.SG.Shape
-import Game.Sequoia.Color (rgba)
-import Game.Sequoia.Types
-import Game.Sequoia.Utils
+import           Control.Arrow (first, second)
+import           Control.Monad (ap)
+import           Data.Default (Default (), def)
+import           Data.Foldable (toList)
+import           Data.SG.Shape
+import           Game.Sequoia.Types
+import           Game.Sequoia.Utils
+import qualified Graphics.Rendering.Cairo as Cairo
 
 group :: [Prop' a] -> Prop' a
 group = Branch
@@ -52,9 +52,9 @@ findTag f t = map (first Leaf)
             . toList
 
 move :: Rel -> Prop' a -> Prop' a
-move rel = transform (liftShape $ moveShape rel) moveStanza
+move rel' = transform (liftShape $ moveShape rel') moveStanza
   where
-    moveStanza s = s { stanzaCentre = plusDir (stanzaCentre s) rel }
+    moveStanza s = s { stanzaCentre = plusDir (stanzaCentre s) rel' }
 
 rotate :: Double -> Prop' a -> Prop' a
 rotate theta = transform (liftShape $ rotateShape theta)
@@ -94,7 +94,7 @@ toShape fs ls = Leaf . ShapePiece def . Form (Style fs ls)
 
 refill :: Color -> Prop' a -> Prop' a
 refill c = transform
-    (\(Form st s) -> Form (Style (Just $ Solid c) Nothing) s)
+    (\(Form _ s) -> Form (Style (Just $ Solid c) Nothing) s)
     (\s -> s { stanzaColor = c })
 
 filled :: Default a => Color -> Shape -> Prop' a
@@ -111,4 +111,13 @@ traced c = toShape Nothing
                    (Just $ defaultLine { lineColor = c
                                        , lineDashing = [8, 4]
                                        } )
+
+withTexture :: Default a => FilePath -> (Prop' a -> IO b) -> IO b
+withTexture path f = Cairo.withImageSurfaceFromPNG path $ \surface -> do
+  width  <- fromIntegral <$> Cairo.imageSurfaceGetWidth surface
+  height <- fromIntegral <$> Cairo.imageSurfaceGetHeight surface
+  f . Leaf
+    . ShapePiece def
+    . Form (Textured surface width height)
+    $ rect origin width height
 

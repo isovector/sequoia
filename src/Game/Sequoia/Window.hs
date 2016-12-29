@@ -3,7 +3,6 @@ module Game.Sequoia.Window
     ) where
 
 import Control.FRPNow.Core
-import Control.Monad.IO.Class (liftIO)
 import Foreign.C.Types (CInt)
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Storable
@@ -15,8 +14,8 @@ import qualified SDL.Raw as SDL
 getDimensions :: Engine -> N (B (Int, Int))
 getDimensions = liftWindow SDL.getWindowSize
 
-position :: Engine -> N (B (Int, Int))
-position = liftWindow SDL.getWindowPosition
+-- position :: Engine -> N (B (Int, Int))
+-- position = liftWindow SDL.getWindowPosition
 
 liftWindow :: (SDL.Window -> Ptr CInt -> Ptr CInt -> IO ())
            -> Engine

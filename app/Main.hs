@@ -2,19 +2,15 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
-import Control.Applicative
 import Control.Eff
-import Control.Eff.Lift
 import Control.Eff.Reader.Lazy
 import Control.Monad
-import Data.Void
-import Debug.Trace
 import Game.Sequoia
 import Game.Sequoia.Color
 import Game.Sequoia.Keyboard
-import Game.Sequoia.Utils
 
 type Prop = Prop' ()
 
@@ -35,23 +31,16 @@ square walls = do
             dpos <- sample $ arrows keys
             return $ tryMove walls [] sq (scaleRel (300 * dt) dpos)
 
-magic :: Engine -> Now (Behavior Prop)
-magic engine = do
+magic :: Prop -> Engine -> Now (Behavior Prop)
+magic baller _ = do
     clock    <- getClock
     keyboard <- getKeyboard
-    let wall = filled blue $ circle (mkPos 35 35) 25
-    (sq, addr) <- run . flip runReader (deltaTime clock)
-                      . flip runReader keyboard
-                      $ square [wall]
-    poll $ do
-        spaceDown <- sample $ isDown keyboard SpaceKey
-        aDown     <- sample $ isDown keyboard AKey
-        when spaceDown . sync $ addr (refill blue)
-        when aDown     . sync $ addr (refill green)
 
     return $ do
-        sq' <- sq
-        return $ group [sq', wall]
+        now <- sample $ totalTime clock
+        return $ group [rotate now baller]
 
-main = play (EngineConfig (640, 480) "hello" black) magic return
+main :: IO ()
+main = withTexture "app/baller.png" $ \baller ->
+         play (EngineConfig (640, 480) "hello" black) (magic baller) return
 

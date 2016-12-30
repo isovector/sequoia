@@ -14,6 +14,7 @@ module Game.Sequoia
     , module Game.Sequoia.Time
     , module Game.Sequoia.Types
     , Engine ()
+    , Color ()
     , rgb
     , rgba
     ) where

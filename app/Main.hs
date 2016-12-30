@@ -29,15 +29,14 @@ magic _ = do
     return $ do
         now <- sample $ totalTime clock
         let skel = scale 0.5 $ doAnimation schema $ ((round $ now * 100) `mod` 300)
-        return $ centeredCollage 640 480 [ move (0, 400) $ skel
-                         ]
+        return $ centeredCollage 640 480 [ move (V2 0 400) $ skel ]
 
 
 makeBones :: Schema -> [Form]
 makeBones schema = toProp <$> schema ^. schemaEntity._head.entityObjInfo
   where
     toProp Bone{..} = traced' white
-                    $ polygon $ path
+                    $ polygon
                       [ V2 0 (toRealFloat $ _boneHeight / 2)
                       , V2 (toRealFloat _boneWidth) 0
                       , V2 0 (toRealFloat $ (-_boneHeight) / 2)
@@ -47,7 +46,7 @@ doAnimation :: Schema -> Int -> Form
 doAnimation schema frame =
   let bones = animate (head $ schema ^. schemaEntity._head.entityAnimation)
                       frame
-      drawBone ResultBone{..} = move (_rbX, -_rbY)
+      drawBone ResultBone{..} = move (V2 _rbX $ -_rbY)
                               . rotate (-_rbAngle)
    in case bones of
         Just x -> group . fmap (uncurry drawBone)

@@ -22,7 +22,12 @@ executable sequoia
     sequoia,
     transformers,
     frpnow,
-    extensible-effects
+    extensible-effects,
+    bones,
+    lens,
+    scientific,
+    string-conv,
+    aeson
   hs-source-dirs:      app
   default-language:    Haskell2010
 

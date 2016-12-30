@@ -1,4 +1,6 @@
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE RecordWildCards #-}
+
 module Game.Sequoia.Scene
     ( group
     , tagging
@@ -18,6 +20,8 @@ module Game.Sequoia.Scene
     , styled
     , traced
     , withTexture
+    , center
+    , centerOf
     ) where
 
 import           Control.Arrow (first, second)
@@ -56,15 +60,34 @@ move rel' = transform (liftShape $ moveShape rel') moveStanza
   where
     moveStanza s = s { stanzaCentre = plusDir (stanzaCentre s) rel' }
 
+centerOf :: Piece a -> Pos
+centerOf (ShapePiece _ (Form _ s))  = shapeCentre s
+centerOf (StanzaPiece _ Stanza{..}) = stanzaCentre
+
+center :: Prop' a -> Pos
+center (Leaf l) = centerOf l
+center b =
+  let (c, n) =
+        foldr (\a x -> (posDif (centerOf a) origin + fst x, 1 + snd x))
+              ((rel 0 0, 0) :: (Rel, Double)) b
+   in plusDir origin $ scaleRel (1/n) c
+
 rotate :: Double -> Prop' a -> Prop' a
 rotate theta = transform (liftShape $ rotateShape theta)
              -- TODO(sandy): we can support this in drawing code
              $ error "unable to rotate stanza"
 
 scale :: Double -> Prop' a -> Prop' a
-scale s = transform (liftShape $ scaleShape s)
-        -- TODO(sandy): we can support this in drawing code
-        $ error "unable to scale stanza"
+scale s f@(Leaf _) = transform (liftShape $ scaleShape s)
+                               (error "don't scale stanza") f
+scale s b = transform (liftShape scaleAndMove)
+                      (error "don't scale stanza") b
+  where
+    c = center b
+    scaleAndMove shape =
+      let dif = posDif (shapeCentre shape) c
+       in scaleShape s $ moveShape (-dif + scaleRel s dif) shape
+
 
 teleport :: Pos -> Prop' a -> Prop' a
 teleport pos = transform (liftShape $ teleportShape pos) teleportStanza

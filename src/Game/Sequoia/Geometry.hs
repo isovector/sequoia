@@ -1,8 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module Game.Sequoia.Geometry
-    ( center
-    , sweepLine
+    ( sweepLine
     , sweepProp
     , overlapping
     , tryMove
@@ -15,7 +14,6 @@ import Data.SG.Shape
 import Data.Maybe (isJust, fromJust)
 import Game.Sequoia.Scene
 import Game.Sequoia.Types
-import Game.Sequoia.Utils
 
 getShapes :: Piece a -> [(Piece a, Shape)]
 getShapes p@(ShapePiece _ f)  = return $ (p, getShape f)
@@ -27,21 +25,9 @@ getShape (Form _ s) = s
 between :: Ord a => a -> a -> a -> Bool
 between a b x = a <= x && x <= b
 
-centerOf :: Piece a -> Pos
-centerOf (ShapePiece _ (Form _ s))  = shapeCentre s
-centerOf (StanzaPiece _ Stanza{..}) = stanzaCentre
-
-center :: Prop' a -> Pos
-center (Leaf l) = centerOf l
-center b =
-    let (c, n) = foldr (\a (c, n) -> (posDif (centerOf a) origin + c, 1 + n))
-                       ((rel 0 0, 0) :: (Rel, Double))
-                       b
-     in plusDir origin $ scaleRel (1/n) c
-
 sweepLine :: [Piece a] -> Pos -> Rel -> [Piece a]
-sweepLine ps pos rel = do
-    let line = Line2 pos rel
+sweepLine ps pos rel' = do
+    let line = Line2 pos rel'
         shapes = join $ map getShapes ps
     (p, s) <- shapes
     let mayIntersect = intersectLineShape line s
@@ -65,26 +51,25 @@ overlapping ps prop = do
     return p
 
 sweepProp :: [Prop' a] -> Prop' a -> Rel -> [Piece a]
-sweepProp pps prop rel = do
+sweepProp pps prop rel' = do
     let ps = join $ fmap toList pps
     p <- toList prop
     let pos = centerOf p
-    sweepLine ps pos rel ++ overlapping ps (move rel prop)
+    sweepLine ps pos rel' ++ overlapping ps (move rel' prop)
 
 tryMove :: [Prop' a] -> [Prop' a] -> Prop' a -> Rel -> Prop' a
-tryMove walls' floors ps rel
-  | rel == origin = ps
+tryMove walls' floors ps rel'
+  | rel' == origin = ps
   | otherwise =
     let walls = join $ fmap toList walls'
         pos = center ps
-        p = toList ps
         -- TODO(sandy): make this a real sweep
-        hitWalls = sweepLine walls pos rel
-        hitFloors = sweepProp floors ps rel
+        hitWalls = sweepLine walls pos rel'
+        hitFloors = sweepProp floors ps rel'
         inClear = null hitWalls
         onFloor = null floors || not (null hitFloors)
         canMove = inClear && onFloor
      in if canMove
-           then move rel ps
+           then move rel' ps
            else ps
 

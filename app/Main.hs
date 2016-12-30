@@ -10,7 +10,7 @@ import Data.String.Conv (toS)
 import Control.Lens
 import Data.Spriter.Types
 import Data.Spriter.Skeleton
-import Data.Aeson (decode)
+import Data.Aeson (decode, fromJSON, Result (Success))
 import Control.Monad
 import Control.Monad.IO.Class (liftIO)
 import Game.Sequoia
@@ -22,12 +22,19 @@ type Prop = Prop' ()
 
 magic :: Prop -> Engine -> Now (Behavior Prop)
 magic baller _ = do
-    clock    <- getClock
-    Just schema <- liftIO $ decode . toS <$> readFile "/home/bootstrap/Projects/bones/basic-anim.scon"
+    clock <- getClock
+    Just json  <- liftIO $ decode . toS <$> readFile "/home/bootstrap/Projects/bones/basic-anim.scon"
+    let schema' = fromJSON json
+    liftIO $ print schema'
+    let Success schema = schema'
 
     return $ do
         now <- sample $ totalTime clock
-        return $ doAnimation schema (((round $ now * 100) `mod` 290) + 10)
+        let skel = scale 0.1 $ doAnimation schema $ ((round $ now * 100) `mod` 300)
+        return $ group [ skel
+                       , filled red $ circle origin 5
+                       , filled blue $ circle (center skel) 5
+                       ]
 
 
 makeBones :: Schema -> [Prop]

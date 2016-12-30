@@ -763,18 +763,18 @@ keyPress keys = next . edges . isDown keys
 isDown :: B [Key] -> Key -> B Bool
 isDown keys k = elem k <$> keys
 
-arrows, wasd :: B [Key] -> B Rel
+arrows, wasd :: B [Key] -> B V2
 arrows = liftArrows UpKey LeftKey DownKey RightKey
 wasd   = liftArrows  WKey    AKey    SKey     DKey
 
-liftArrows :: Key -> Key -> Key -> Key -> B [Key] -> B Rel
+liftArrows :: Key -> Key -> Key -> Key -> B [Key] -> B V2
 liftArrows uk lk dk rk keys =
     liftSig <$> isDown keys uk
             <*> isDown keys lk
             <*> isDown keys dk
             <*> isDown keys rk
   where
-    liftSig u l d r = uncurry rel $ mapT fromIntegral
+    liftSig u l d r = uncurry V2 $ mapT fromIntegral
         (- 1 * fromEnum l + 1 * fromEnum r
         , -1 * fromEnum u + 1 * fromEnum d
         )

@@ -1,4 +1,5 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE NamedFieldPuns              #-}
+{-# LANGUAGE RecordWildCards             #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 
 -- Strongly inspired by Helm.
@@ -8,8 +9,7 @@ module Game.Sequoia
     ( EngineConfig (..)
     , play
     , module Control.Applicative
-    , module Game.Sequoia.Geometry
-    , module Game.Sequoia.Scene
+    , module Game.Sequoia.Graphics
     , module Game.Sequoia.Signal
     , module Game.Sequoia.Time
     , module Game.Sequoia.Types
@@ -21,8 +21,6 @@ module Game.Sequoia
 import           Control.Applicative
 import           Control.Monad (forM_)
 import           Data.Bits ((.|.))
-import           Data.SG.Geometry.TwoDim (Rel2' (..))
-import           Data.SG.Shape
 import qualified Data.Text as T
 import           Foreign.C.String (withCAString)
 import           Foreign.Marshal.Alloc (alloca)
@@ -30,15 +28,13 @@ import           Foreign.Ptr (nullPtr, castPtr)
 import           Foreign.Storable (peek)
 import           Game.Sequoia.Color
 import           Game.Sequoia.Engine
-import           Game.Sequoia.Geometry
-import           Game.Sequoia.Scene
+import           Game.Sequoia.Graphics
 import           Game.Sequoia.Signal
 import           Game.Sequoia.Time
 import           Game.Sequoia.Types
 import           Game.Sequoia.Utils
 import           Game.Sequoia.Window
 import qualified Graphics.Rendering.Cairo as Cairo
-import qualified Graphics.Rendering.Cairo.Matrix as Matrix
 import qualified Graphics.Rendering.Pango as Pango
 import qualified SDL.Raw as SDL
 import           System.Endian (fromBE32)
@@ -72,7 +68,7 @@ startup (EngineConfig { .. }) = withCAString windowTitle $ \title -> do
 
 play :: EngineConfig
      -> (Engine -> N i)
-     -> (i -> N (B (Prop' a)))
+     -> (i -> N (B Element))
      -> IO ()
 play cfg initial sceneN = do
     runNowMaster $ do
@@ -83,7 +79,7 @@ play cfg initial sceneN = do
         sample $ whenE quit
     SDL.quit
 
-wantsQuit :: Engine -> B (Prop' a) -> B (Int, Int) -> N Bool
+wantsQuit :: Engine -> B Element -> B (Int, Int) -> N Bool
 wantsQuit engine sceneSig dimSig = do
     scene <- sample sceneSig
     dims  <- sample dimSig
@@ -91,8 +87,8 @@ wantsQuit engine sceneSig dimSig = do
         render engine scene dims
         SDL.quitRequested
 
-render :: Engine -> Prop' a -> (Int, Int) -> IO ()
-render (Engine { .. }) ps size@(w, h) =
+render :: Engine -> Element -> (Int, Int) -> IO ()
+render e@(Engine { .. }) ps size@(w, h) =
     alloca $ \pixelsptr ->
     alloca $ \pitchptr  -> do
         format <- SDL.masksToPixelFormatEnum 32 (fromBE32 0x0000ff00)
@@ -120,154 +116,177 @@ render (Engine { .. }) ps size@(w, h) =
                   unpackColFor backColor Cairo.setSourceRGBA
                   uncurry (Cairo.rectangle 0 0) $ mapT fromIntegral size
                   Cairo.fill
-                  render' ps size
+                  renderElement e ps
         SDL.unlockTexture texture
         SDL.renderClear renderer
         SDL.renderCopy renderer texture nullPtr nullPtr
         SDL.destroyTexture texture
         SDL.renderPresent renderer
 
-render' :: Prop' a -> (Int, Int) -> Cairo.Render ()
-render' ps size = do
+
+-- {-| A utility function that lazily grabs an image surface from the cache,
+--     i.e. creating it if it's not already stored in it. -}
+-- getSurface :: Engine -> FilePath -> IO (Cairo.Surface, Int, Int)
+-- getSurface (Engine { cache }) src = do
+--   cached <- Cairo.liftIO (readIORef cache)
+
+--   case Map.lookup src cached of
+--     Just surface -> do
+--       w <- Cairo.imageSurfaceGetWidth surface
+--       h <- Cairo.imageSurfaceGetHeight surface
+
+--       return (surface, w, h)
+--     Nothing -> do
+--       -- TODO: Use SDL_image to support more formats. I gave up after it was painful
+--       -- to convert between the two surface types safely.
+--       -- FIXME: Does this throw an error?
+--       surface <- Cairo.imageSurfaceCreateFromPNG src
+--       w <- Cairo.imageSurfaceGetWidth surface
+--       h <- Cairo.imageSurfaceGetHeight surface
+
+--       writeIORef cache (Map.insert src surface cached) >> return (surface, w, h)
+
+{-| A utility function for rendering a specific element. -}
+renderElement :: Engine -> Element -> Cairo.Render ()
+renderElement state (CollageElement w h center forms) = do
+  Cairo.save
+  Cairo.rectangle 0 0 (fromIntegral w) (fromIntegral h)
+  Cairo.clip
+  forM_ center $ uncurry Cairo.translate
+  mapM_ (renderForm state) forms
+  Cairo.restore
+
+-- renderElement state (ImageElement (sx, sy) sw sh src stretch) = error "don't use images"
+  -- (surface, w, h) <- Cairo.liftIO $ getSurface state (normalise src)
+
+  -- Cairo.save
+  -- Cairo.translate (-fromIntegral sx) (-fromIntegral sy)
+
+  -- if stretch then
+  --   Cairo.scale (fromIntegral sw / fromIntegral w) (fromIntegral sh / fromIntegral h)
+  -- else
+  --   Cairo.scale 1 1
+
+  -- Cairo.setSourceSurface surface 0 0
+  -- Cairo.translate (fromIntegral sx) (fromIntegral sy)
+  -- Cairo.rectangle 0 0 (fromIntegral sw) (fromIntegral sh)
+  -- Cairo.fill
+  -- Cairo.restore
+
+renderElement _ (TextElement (Text { textColor = (Color r g b a), .. })) = do
     Cairo.save
-    uncurry Cairo.translate $ mapT ((/ 2) . fromIntegral) size
-    mapM_ renderProp ps
-    Cairo.restore
 
-renderProp :: Piece a -> Cairo.Render ()
-renderProp (ShapePiece _ f)  = renderForm f
-renderProp (StanzaPiece _ s) = renderStanza s
+    layout <- Pango.createLayout textUTF8
 
-renderStanza :: Stanza -> Cairo.Render ()
-renderStanza (Stanza { .. }) = do
-    layout <- Pango.createLayout stanzaUTF8
+    Cairo.liftIO $ Pango.layoutSetAttributes layout [Pango.AttrFamily { paStart = i, paEnd = j, paFamily = textTypeface },
+                                                     Pango.AttrWeight { paStart = i, paEnd = j, paWeight = mapFontWeight textWeight },
+                                                     Pango.AttrStyle { paStart = i, paEnd = j, paStyle = mapFontStyle textStyle },
+                                                     Pango.AttrSize { paStart = i, paEnd = j, paSize = textHeight }]
 
-    Cairo.liftIO
-        $ Pango.layoutSetAttributes layout
-        [ Pango.AttrFamily { paStart = i, paEnd = j, paFamily = stanzaTypeface }
-        , Pango.AttrWeight { paStart = i, paEnd = j, paWeight = mapFontWeight stanzaWeight }
-        , Pango.AttrStyle  { paStart = i, paEnd = j, paStyle = mapFontStyle stanzaStyle }
-        , Pango.AttrSize   { paStart = i, paEnd = j, paSize = stanzaHeight }
-        ]
+    Pango.PangoRectangle x y w h <- fmap snd $ Cairo.liftIO $ Pango.layoutGetExtents layout
 
-    Pango.PangoRectangle _ _ w h <- fmap snd . Cairo.liftIO
-                                             $ Pango.layoutGetExtents layout
-
-    unpackFor stanzaCentre Cairo.moveTo
-    flip Cairo.relMoveTo (-h / 2) $ case stanzaAlignment of
-      LeftAligned  -> 0
-      Centered     -> -w / 2
-      RightAligned -> -w
-    unpackColFor stanzaColor Cairo.setSourceRGBA
+    Cairo.translate ((-w / 2) -x) ((-h / 2) - y)
+    Cairo.setSourceRGBA r g b a
     Pango.showLayout layout
+    Cairo.restore
 
   where
     i = 0
-    j = T.length stanzaUTF8
-    mapFontWeight weight =
-        case weight of
-          LightWeight  -> Pango.WeightLight
-          NormalWeight -> Pango.WeightNormal
-          BoldWeight   -> Pango.WeightBold
-    mapFontStyle style =
-        case style of
-          NormalStyle  -> Pango.StyleNormal
-          ObliqueStyle -> Pango.StyleOblique
-          ItalicStyle  -> Pango.StyleItalic
+    j = T.length textUTF8
 
-renderForm :: Form -> Cairo.Render ()
-renderForm (Form (Style mfs lfs) s) = do
-    Cairo.newPath
-    case s of
-      Rectangle { .. } -> do
-          let (w, h) = mapT (*2) rectSize
-              (x, y) = unpackPos shapeCentre
-          Cairo.rectangle (x - w/2) (y - h/2) w h
+{-| A utility function that maps to a Pango font weight based off our variant. -}
+mapFontWeight :: FontWeight -> Pango.Weight
+mapFontWeight weight = case weight of
+  LightWeight  -> Pango.WeightLight
+  NormalWeight -> Pango.WeightNormal
+  BoldWeight   -> Pango.WeightBold
 
-      Polygon { .. } -> do
-          forM_ polyPoints $ \r -> do
-              let pos = plusDir shapeCentre r
-              unpackFor pos Cairo.lineTo
-          Cairo.closePath
+{-| A utility function that maps to a Pango font style based off our variant. -}
+mapFontStyle :: FontStyle -> Pango.FontStyle
+mapFontStyle style = case style of
+  NormalStyle  -> Pango.StyleNormal
+  ObliqueStyle -> Pango.StyleOblique
+  ItalicStyle  -> Pango.StyleItalic
 
-      Circle { .. } -> do
-          unpackFor shapeCentre Cairo.arc circSize 0 (pi * 2)
-    mapM_ setLineStyle lfs
-    mapM_ setFillStyle mfs
+{-| A utility function that goes into a state of transformation and then pops it when finished. -}
+withTransform :: Double -> Double -> Double -> Double -> Cairo.Render () -> Cairo.Render ()
+withTransform s t x y f = Cairo.save >> Cairo.scale s s >> Cairo.translate x y >> Cairo.rotate t >> f >> Cairo.restore
 
-renderForm (Form (Textured cairoSurface iw _) s) = do
-    Cairo.newPath
-    Cairo.setSourceSurface cairoSurface 0 0
-    source <- Cairo.getSource
-    Cairo.patternSetExtend source Cairo.ExtendRepeat
-    case s of
-      Rectangle { .. } -> do
-          let (w, h) = mapT (*2) rectSize
-              (x, y) = unpackPos shapeCentre
-              scale = iw / w
-          Cairo.rectangle (x - w/2) (y - h/2) w h
-          Cairo.patternSetMatrix source
-            $ Matrix.scale scale scale
-            $ Matrix.translate (-w/2) (-h/2)
-            $ Matrix.identity
+{-| A utility function that sets the Cairo line cap based off of our version. -}
+setLineCap :: LineCap -> Cairo.Render ()
+setLineCap cap = case cap of
+  FlatCap   -> Cairo.setLineCap Cairo.LineCapButt
+  RoundCap  -> Cairo.setLineCap Cairo.LineCapRound
+  PaddedCap -> Cairo.setLineCap Cairo.LineCapSquare
 
-      Polygon { .. } -> do
-          forM_ polyPoints $ \r -> do
-              let pos = plusDir shapeCentre r
-              unpackFor pos Cairo.lineTo
+{-| A utility function that sets the Cairo line style based off of our version. -}
+setLineJoin :: LineJoin -> Cairo.Render ()
+setLineJoin join = case join of
+  SmoothJoin    -> Cairo.setLineJoin Cairo.LineJoinRound
+  SharpJoin lim -> Cairo.setLineJoin Cairo.LineJoinMiter >> Cairo.setMiterLimit lim
+  ClippedJoin   -> Cairo.setLineJoin Cairo.LineJoinBevel
 
-          let (  p1@(Rel2 (p1x,p1y) _)
-               : p2@(Rel2 (p2x,p2y) _)
-               : _) = polyPoints
-
-              w = distance p1 p2
-              scale = iw / w
-
-          let rotation = Matrix.rotate (negate $ atan2 (p2y-p1y) (p2x-p1x))
-                       $ Matrix.identity
-              p1' = Matrix.transformPoint rotation (-p1x, -p1y)
-
-          Cairo.patternSetMatrix source
-            $ Matrix.scale scale scale
-            $ uncurry Matrix.translate p1'
-            $ rotation
-          Cairo.closePath
-
-      Circle { .. } -> error "texture can't be a circle"
-    Cairo.fillPreserve
-
+{-| A utility function that sets up all the necessary settings with Cairo
+    to render with a line style and then strokes afterwards. Assumes
+    that all drawing paths have already been setup before being called. -}
 setLineStyle :: LineStyle -> Cairo.Render ()
-setLineStyle (LineStyle { .. }) = do
-    unpackColFor lineColor Cairo.setSourceRGBA
-    setLineCap
-    setLineJoin
-    Cairo.setLineWidth lineWidth
-    Cairo.setDash lineDashing lineDashOffset
-    Cairo.strokePreserve
-  where
-    setLineCap = Cairo.setLineCap $
-        case lineCap of
-          FlatCap   -> Cairo.LineCapButt
-          RoundCap  -> Cairo.LineCapRound
-          PaddedCap -> Cairo.LineCapSquare
-    setLineJoin =
-        case lineJoin of
-          SmoothJoin    -> Cairo.setLineJoin Cairo.LineJoinRound
-          SharpJoin lim -> Cairo.setLineJoin Cairo.LineJoinMiter
-                        >> Cairo.setMiterLimit lim
-          ClippedJoin   -> Cairo.setLineJoin Cairo.LineJoinBevel
+setLineStyle (LineStyle { lineColor = Color r g b a, .. }) = do
+  Cairo.setSourceRGBA r g b a
+  setLineCap lineCap
+  setLineJoin lineJoin
+  Cairo.setLineWidth lineWidth
+  Cairo.setDash lineDashing lineDashOffset
+  Cairo.stroke
 
+{-| A utility function that sets up all the necessary settings with Cairo
+    to render with a fill style and then fills afterwards. Assumes
+    that all drawing paths have already been setup before being called. -}
+setFillStyle :: Engine -> FillStyle -> Cairo.Render ()
+setFillStyle _ (Solid (Color r g b a)) = do
+  Cairo.setSourceRGBA r g b a
+  Cairo.fill
 
-setFillStyle :: FillStyle -> Cairo.Render ()
-setFillStyle (Solid col) = do
-    unpackColFor col Cairo.setSourceRGBA
-    Cairo.fillPreserve
+-- setFillStyle state (Texture src) = do
+--   (surface, _, _) <- Cairo.liftIO $ getSurface state (normalise src)
+--   Cairo.setSourceSurface surface 0 0
+--   Cairo.getSource >>= flip Cairo.patternSetExtend Cairo.ExtendRepeat
+--   Cairo.fill
 
-unpackFor :: Pos -> (Double -> Double -> a) -> a
-unpackFor p f = uncurry f $ unpackPos p
+{-| A utility that renders a form. -}
+renderForm :: Engine -> Form -> Cairo.Render ()
+renderForm state Form { .. } = withTransform formScale formTheta formX formY $
+  case formStyle of
+    PathForm style ~ps @ ((hx, hy) : _) -> do
+      setLineStyle style
+      Cairo.moveTo hx hy
+      mapM_ (uncurry Cairo.lineTo) ps
+
+    ShapeForm style shape -> do
+      case shape of
+        PolygonShape ~ps @ ((hx, hy) : _) -> do
+          Cairo.newPath
+          Cairo.moveTo hx hy
+          mapM_ (uncurry Cairo.lineTo) ps
+          Cairo.closePath
+
+        RectangleShape (w, h) -> Cairo.rectangle (-w / 2) (-h / 2) w h
+
+        ArcShape (cx, cy) a1 a2 r (sx, sy) -> do
+          Cairo.scale sx sy
+          Cairo.arc cx cy r a1 a2
+          Cairo.scale 1 1
+
+      either setLineStyle (setFillStyle state) style
+
+    ElementForm element -> renderElement state element
+    GroupForm mayhaps forms -> do
+      Cairo.save
+      forM_ mayhaps Cairo.setMatrix
+      mapM_ (renderForm state) forms
+      Cairo.restore
+
 
 unpackColFor :: Color
              -> (Double -> Double ->  Double -> Double -> a)
              -> a
 unpackColFor (Color r g b a) f = f r g b a
-

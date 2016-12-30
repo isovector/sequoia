@@ -34,15 +34,13 @@ executable sequoia
 library
   ghc-options:         -fwarn-incomplete-patterns -Wall
   exposed-modules:     Game.Sequoia.Signal,
-                       Game.Sequoia.Combinators,
-                       Game.Sequoia.Scene,
                        Game.Sequoia.Types,
                        Game.Sequoia.Color,
+                       Game.Sequoia.Graphics,
                        Game.Sequoia.Engine,
                        Game.Sequoia.Window,
                        Game.Sequoia.Keyboard,
-                       Game.Sequoia.Geometry,
-                       Game.Sequoia.Stanza,
+                       Game.Sequoia.Text,
                        Game.Sequoia.Utils,
                        Game.Sequoia.Time,
                        Game.Sequoia
@@ -55,7 +53,6 @@ library
                        random,
                        mtl,
                        transformers,
-                       SG,
                        containers,
                        sdl2 >= 2.1.3 && < 2.2,
                        cairo,
@@ -63,7 +60,8 @@ library
                        cpu,
                        data-default,
                        frpnow,
-                       free
+                       free,
+                       linear
 
   hs-source-dirs:      src
   default-language:    Haskell2010

@@ -18,10 +18,8 @@ import Game.Sequoia.Color
 import Game.Sequoia.Keyboard
 import Data.Scientific (toRealFloat)
 
-type Prop = Prop' ()
-
-magic :: Prop -> Engine -> Now (Behavior Prop)
-magic baller _ = do
+magic :: Engine -> Now (Behavior Element)
+magic _ = do
     clock <- getClock
     Just json  <- liftIO $ decode . toS <$> readFile "/home/bootstrap/Projects/bones/basic-anim.scon"
     let schema' = fromJSON json
@@ -30,36 +28,33 @@ magic baller _ = do
 
     return $ do
         now <- sample $ totalTime clock
-        let skel = scale 0.1 $ doAnimation schema $ ((round $ now * 100) `mod` 300)
-        return $ group [ skel
-                       , filled red $ circle origin 5
-                       , filled blue $ circle (center skel) 5
-                       ]
+        let skel = scale 0.5 $ doAnimation schema $ ((round $ now * 100) `mod` 300)
+        return $ centeredCollage 640 480 [ move (0, 400) $ skel
+                         ]
 
 
-makeBones :: Schema -> [Prop]
+makeBones :: Schema -> [Form]
 makeBones schema = toProp <$> schema ^. schemaEntity._head.entityObjInfo
   where
-    toProp Bone{..} = traced white
-                    $ polygon origin
-                      [ rel 0 (toRealFloat $ _boneHeight / 2)
-                      , rel (toRealFloat _boneWidth) 0
-                      , rel 0 (toRealFloat $ (-_boneHeight) / 2)
+    toProp Bone{..} = traced' white
+                    $ polygon $ path
+                      [ V2 0 (toRealFloat $ _boneHeight / 2)
+                      , V2 (toRealFloat _boneWidth) 0
+                      , V2 0 (toRealFloat $ (-_boneHeight) / 2)
                       ]
 
-doAnimation :: Schema -> Int -> Prop
+doAnimation :: Schema -> Int -> Form
 doAnimation schema frame =
   let bones = animate (head $ schema ^. schemaEntity._head.entityAnimation)
                       frame
-      drawBone ResultBone{..} = move (rel _rbX (-_rbY))
+      drawBone ResultBone{..} = move (_rbX, -_rbY)
                               . rotate (-_rbAngle)
    in case bones of
         Just x -> group . fmap (uncurry drawBone)
                         $ zip x (makeBones schema)
-        Nothing -> traced red $ rect origin 10 10
+        Nothing -> traced' red $ rect 10 10
 
 
 main :: IO ()
-main = withTexture "app/baller.png" $ \baller ->
-         play (EngineConfig (640, 480) "hello" black) (magic baller) return
+main = play (EngineConfig (640, 480) "hello" black) magic return
 

@@ -1,6 +1,5 @@
 packages:
 - '.'
-- '../SG'
 - '../bones'
 # - location:
 #     git: https://github.com/isovector/SG.git

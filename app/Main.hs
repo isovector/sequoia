@@ -29,7 +29,10 @@ magic _ = do
     return $ do
         now <- sample $ totalTime clock
         let skel = scale 0.5 $ doAnimation schema $ ((round $ now * 100) `mod` 300)
-        return $ centeredCollage 640 480 [ move (V2 0 400) $ skel ]
+        return $ centeredCollage 640 480
+               [ move (V2 0 400) $ skel
+               , toForm $ image "app/baller.png"
+               ]
 
 
 makeBones :: Schema -> [Form]

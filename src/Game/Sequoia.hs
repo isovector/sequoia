@@ -22,6 +22,8 @@ module Game.Sequoia
 import           Control.Applicative
 import           Control.Monad (forM_)
 import           Data.Bits ((.|.))
+import           Data.IORef (newIORef, readIORef, writeIORef)
+import qualified Data.Map as M
 import qualified Data.Text as T
 import           Foreign.C.String (withCAString)
 import           Foreign.Marshal.Alloc (alloca)
@@ -39,6 +41,7 @@ import qualified Graphics.Rendering.Cairo as Cairo
 import qualified Graphics.Rendering.Pango as Pango
 import qualified SDL.Raw as SDL
 import           System.Endian (fromBE32)
+import           System.FilePath.Posix (normalise)
 
 data EngineConfig = EngineConfig
   { windowDimensions :: (Int, Int)
@@ -61,10 +64,12 @@ startup (EngineConfig { .. }) = withCAString windowTitle $ \title -> do
 
     window   <- SDL.createWindow title 0 0 w h wflags
     renderer <- SDL.createRenderer window (-1) rflags
+    cache    <- newIORef mempty
     return Engine { window    = window
                   , renderer  = renderer
                   , continue  = True
                   , backColor = windowColor
+                  , cache     = cache
                   }
 
 play :: EngineConfig
@@ -125,27 +130,22 @@ render e@(Engine { .. }) ps size@(w, h) =
         SDL.renderPresent renderer
 
 
--- {-| A utility function that lazily grabs an image surface from the cache,
---     i.e. creating it if it's not already stored in it. -}
--- getSurface :: Engine -> FilePath -> IO (Cairo.Surface, Int, Int)
--- getSurface (Engine { cache }) src = do
---   cached <- Cairo.liftIO (readIORef cache)
+getSurface :: Engine -> FilePath -> IO (Cairo.Surface, Int, Int)
+getSurface (Engine { cache }) src = do
+  cached <- Cairo.liftIO (readIORef cache)
 
---   case Map.lookup src cached of
---     Just surface -> do
---       w <- Cairo.imageSurfaceGetWidth surface
---       h <- Cairo.imageSurfaceGetHeight surface
+  case M.lookup src cached of
+    Just surface -> do
+      w <- Cairo.imageSurfaceGetWidth surface
+      h <- Cairo.imageSurfaceGetHeight surface
 
---       return (surface, w, h)
---     Nothing -> do
---       -- TODO: Use SDL_image to support more formats. I gave up after it was painful
---       -- to convert between the two surface types safely.
---       -- FIXME: Does this throw an error?
---       surface <- Cairo.imageSurfaceCreateFromPNG src
---       w <- Cairo.imageSurfaceGetWidth surface
---       h <- Cairo.imageSurfaceGetHeight surface
+      return (surface, w, h)
+    Nothing -> do
+      surface <- Cairo.imageSurfaceCreateFromPNG src
+      w <- Cairo.imageSurfaceGetWidth surface
+      h <- Cairo.imageSurfaceGetHeight surface
 
---       writeIORef cache (Map.insert src surface cached) >> return (surface, w, h)
+      writeIORef cache (M.insert src surface cached) >> return (surface, w, h)
 
 {-| A utility function for rendering a specific element. -}
 renderElement :: Engine -> Element -> Cairo.Render ()
@@ -157,22 +157,19 @@ renderElement state (CollageElement w h center forms) = do
   mapM_ (renderForm state) forms
   Cairo.restore
 
--- renderElement state (ImageElement (sx, sy) sw sh src stretch) = error "don't use images"
-  -- (surface, w, h) <- Cairo.liftIO $ getSurface state (normalise src)
+renderElement state (ImageElement crop src) = do
+  (surface, w, h) <- Cairo.liftIO $ getSurface state (normalise src)
+  let (Crop sx sy sw sh) = maybe (Crop 0 0 w h) id crop
 
-  -- Cairo.save
-  -- Cairo.translate (-fromIntegral sx) (-fromIntegral sy)
+  Cairo.save
+  Cairo.translate (-fromIntegral sx) (-fromIntegral sy)
+  Cairo.scale 1 1
 
-  -- if stretch then
-  --   Cairo.scale (fromIntegral sw / fromIntegral w) (fromIntegral sh / fromIntegral h)
-  -- else
-  --   Cairo.scale 1 1
-
-  -- Cairo.setSourceSurface surface 0 0
-  -- Cairo.translate (fromIntegral sx) (fromIntegral sy)
-  -- Cairo.rectangle 0 0 (fromIntegral sw) (fromIntegral sh)
-  -- Cairo.fill
-  -- Cairo.restore
+  Cairo.setSourceSurface surface 0 0
+  Cairo.translate (fromIntegral sx) (fromIntegral sy)
+  Cairo.rectangle 0 0 (fromIntegral sw) (fromIntegral sh)
+  Cairo.fill
+  Cairo.restore
 
 renderElement _ (TextElement (Text { textColor = (Color r g b a), .. })) = do
     Cairo.save
@@ -275,7 +272,6 @@ renderForm state Form { .. } = withTransform formScale formTheta formX formY $
         ArcShape (cx, cy) a1 a2 r (sx, sy) -> do
           Cairo.scale sx sy
           Cairo.arc cx cy r a1 a2
-          Cairo.scale 1 1
 
       either setLineStyle (setFillStyle state) style
 

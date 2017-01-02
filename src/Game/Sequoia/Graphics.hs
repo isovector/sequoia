@@ -98,13 +98,13 @@ form :: FormStyle -> Form
 form style = Form { formTheta = 0, formScale = 1, formX = 0, formY = 0, formStyle = style }
 
 fill :: FillStyle -> Shape -> Form
-fill style shape = form (ShapeForm (Right style) shape)
+fill style = form . ShapeForm (Right style)
 
 filled :: Color -> Shape -> Form
-filled color = fill (Solid color)
+filled = fill . Solid
 
 textured :: String -> Shape -> Form
-textured src = fill (Texture src)
+textured = fill . Texture
 
 outlined :: LineStyle -> Shape -> Form
 outlined style shape = form (ShapeForm (Left style) shape)
@@ -117,17 +117,17 @@ traced' c = outlined (defaultLine { lineColor = c
                                 , lineDashing = [8, 4]
                                 } )
 
--- sprite :: Int -> Int -> (Int, Int) -> FilePath -> Form
--- sprite w h pos src = form (ElementForm (ImageElement pos w h src False))
+sprite :: FilePath -> Form
+sprite = toForm . image
 
 toForm :: Element -> Form
-toForm element = form (ElementForm element)
+toForm = form . ElementForm
 
 blank :: Form
 blank = group []
 
 group :: [Form] -> Form
-group forms = form (GroupForm Nothing forms)
+group = form . GroupForm Nothing
 
 groupTransform :: Matrix -> [Form] -> Form
 groupTransform matrix forms = form (GroupForm (Just matrix) forms)
@@ -153,7 +153,7 @@ fixedCollage w h (x, y) = CollageElement w h (Just (realToFrac w / 2 - x, realTo
 type Path = [(Double, Double)]
 
 path :: [V2] -> Path
-path points = unpackV2 <$> points
+path = fmap unpackV2
 
 segment :: (Double, Double) -> (Double, Double) -> Path
 segment p1 p2 = [p1, p2]

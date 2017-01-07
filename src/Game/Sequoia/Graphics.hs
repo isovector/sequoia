@@ -114,8 +114,11 @@ traced style p = form (PathForm style p)
 
 traced' :: Color -> Shape -> Form
 traced' c = outlined (defaultLine { lineColor = c
-                                , lineDashing = [8, 4]
-                                } )
+                                  , lineDashing = [8, 4]
+                                  })
+
+outlined' :: Color -> Shape -> Form
+outlined' c = outlined (defaultLine { lineColor = c } )
 
 sprite :: FilePath -> Form
 sprite = toForm . image
@@ -140,6 +143,7 @@ scale n f = f { formScale = n * formScale f }
 
 move :: V2 -> Form -> Form
 move (V2 rx ry) f = f { formX = rx + formX f, formY = ry + formY f }
+move _ _ = undefined
 
 collage :: Int -> Int -> [Form] -> Element
 collage w h = CollageElement w h Nothing
@@ -158,9 +162,10 @@ path = fmap unpackV2
 segment :: (Double, Double) -> (Double, Double) -> Path
 segment p1 p2 = [p1, p2]
 
-data Shape = PolygonShape Path |
-             RectangleShape (Double, Double) |
-             ArcShape (Double, Double) Double Double Double (Double, Double) deriving (Show, Eq, Ord, Read)
+data Shape = PolygonShape Path
+           | RectangleShape (Double, Double)
+           | ArcShape (Double, Double) Double Double Double (Double, Double)
+           deriving (Show, Eq, Ord, Read)
 
 polygon :: [V2] -> Shape
 polygon = PolygonShape . path
@@ -184,6 +189,9 @@ ellipse w h = polygon
 
 circle :: Double -> Shape
 circle r = ArcShape (0, 0) 0 (2 * pi) r (1, 1)
+
+arc :: V2 -> Double -> Double -> Shape
+arc size theta phi = ArcShape (0, 0) theta phi 1 (unpackV2 size)
 
 ngon :: Int -> Double -> Shape
 ngon n r = PolygonShape (map (\i -> (r * cos (t * i), r * sin (t * i))) [0 .. fromIntegral (n - 1)])

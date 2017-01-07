@@ -272,6 +272,7 @@ renderForm state Form { .. } = withTransform formScale formTheta formX formY $
         ArcShape (cx, cy) a1 a2 r (sx, sy) -> do
           Cairo.scale sx sy
           Cairo.arc cx cy r a1 a2
+          Cairo.scale 1 1
 
       either setLineStyle (setFillStyle state) style
 

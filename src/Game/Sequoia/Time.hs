@@ -4,13 +4,11 @@ module Game.Sequoia.Time
     , getClock
     , totalTime
     , deltaTime
-    , fps
     ) where
 
 import Control.Applicative ((<$>))
 import Control.FRPNow.Core
 import Control.FRPNow.Lib hiding (first)
-import Data.Function (on)
 import Data.Time.Clock.POSIX (getPOSIXTime)
 import Game.Sequoia.Signal
 import Prelude hiding (last)
@@ -20,7 +18,8 @@ data Clock = Clock (B Time) (B Time)
 
 getClock :: N Clock
 getClock = do
-    clock <- poll $ sync getTime
+    now <- realToFrac <$> sync getPOSIXTime
+    clock <- poll . sync $ getTime now
     elapsed <- sample $ do
         first <- sample clock
         last  <- prev first clock
@@ -33,28 +32,6 @@ totalTime (Clock a _) = a
 deltaTime :: Clock -> B Time
 deltaTime (Clock _ a) = a
 
-getTime :: IO Time
-getTime = realToFrac <$> getPOSIXTime
-
-change' :: (a -> a -> Bool) -> (a -> b) -> B a -> B (E b)
-change' p f b = fmap (fmap f) . futuristic $ do
-    v <- b
-    whenJust (notSame v <$> b)
-  where
-    notSame v v' | not $ p v v' = Just v'
-                 | otherwise    = Nothing
-
-fps :: Double -> N (B (E ()))
-fps frames = do
-    fmap (change' (on (==) snd) (const ())) $ pollFold
-        (sync getTime >>= \a -> return (a, a))
-        $ \(_, last) -> do
-            now' <- sync getTime
-            return (now',
-                   if now' - last > dt
-                      then now'
-                      else last
-                      )
-  where
-    dt = 1 / frames
+getTime :: Time -> IO Time
+getTime t = subtract t . realToFrac <$> getPOSIXTime
 

@@ -207,8 +207,8 @@ mapFontStyle style = case style of
   ItalicStyle  -> Pango.StyleItalic
 
 {-| A utility function that goes into a state of transformation and then pops it when finished. -}
-withTransform :: Double -> Double -> Double -> Double -> Cairo.Render () -> Cairo.Render ()
-withTransform s t x y f = Cairo.save >> Cairo.scale s s >> Cairo.translate x y >> Cairo.rotate t >> f >> Cairo.restore
+withTransform :: Double -> Double -> Double -> Double -> Double -> Cairo.Render () -> Cairo.Render ()
+withTransform sx sy t x y f = Cairo.save >> Cairo.scale sx sy >> Cairo.translate x y >> Cairo.rotate t >> f >> Cairo.restore
 
 {-| A utility function that sets the Cairo line cap based off of our version. -}
 setLineCap :: LineCap -> Cairo.Render ()
@@ -252,7 +252,7 @@ setFillStyle _ (Solid (Color r g b a)) = do
 
 {-| A utility that renders a form. -}
 renderForm :: Engine -> Form -> Cairo.Render ()
-renderForm state Form { .. } = withTransform formScale formTheta formX formY $
+renderForm state Form { .. } = withTransform formScaleX formScaleY formTheta formX formY $
   case formStyle of
     PathForm style ~ps @ ((hx, hy) : _) -> do
       setLineStyle style

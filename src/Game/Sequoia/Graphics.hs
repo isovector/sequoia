@@ -3,7 +3,7 @@ module Game.Sequoia.Graphics where
 import qualified Data.Text as T
 import           Game.Sequoia.Color (Color, black)
 import           Game.Sequoia.Types
-import           Graphics.Rendering.Cairo.Matrix (Matrix)
+import           Graphics.Rendering.Cairo.Matrix (Matrix (..))
 
 
 data FontWeight = LightWeight
@@ -41,7 +41,8 @@ croppedImage crop src = ImageElement (Just crop) src
 
 data Form = Form {
   formTheta :: Double,
-  formScale :: Double,
+  formScaleX :: Double,
+  formScaleY :: Double,
   formX :: Double,
   formY :: Double,
   formStyle :: FormStyle
@@ -95,7 +96,13 @@ data FormStyle = PathForm LineStyle Path |
                  GroupForm (Maybe Matrix) [Form] deriving (Show, Eq)
 
 form :: FormStyle -> Form
-form style = Form { formTheta = 0, formScale = 1, formX = 0, formY = 0, formStyle = style }
+form style = Form { formTheta = 0
+                  , formScaleX = 1
+                  , formScaleY = 1
+                  , formX = 0
+                  , formY = 0
+                  , formStyle = style
+                  }
 
 fill :: FillStyle -> Shape -> Form
 fill style = form . ShapeForm (Right style)
@@ -139,7 +146,13 @@ rotate :: Double -> Form -> Form
 rotate t f = f { formTheta = t + formTheta f }
 
 scale :: Double -> Form -> Form
-scale n f = f { formScale = n * formScale f }
+scale n f = f { formScaleX = n * formScaleX f
+              , formScaleY = n * formScaleY f
+              }
+
+flipX :: Form -> Form
+flipX f = f { formScaleX = negate $ formScaleX f
+            }
 
 move :: V2 -> Form -> Form
 move (V2 rx ry) f = f { formX = rx + formX f, formY = ry + formY f }

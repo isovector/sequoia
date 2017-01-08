@@ -150,6 +150,11 @@ scale n f = f { formScaleX = n * formScaleX f
               , formScaleY = n * formScaleY f
               }
 
+scaleXY :: Double -> Double -> Form -> Form
+scaleXY x y f = f { formScaleX = x * formScaleX f
+                  , formScaleY = y * formScaleY f
+                  }
+
 flipX :: Form -> Form
 flipX f = f { formScaleX = negate $ formScaleX f
             }

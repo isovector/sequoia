@@ -219,13 +219,13 @@ renderElement state (ImageElement crop (Just color) src) = do
   Cairo.setSourceSurface surface 0 0
   Cairo.translate (fromIntegral sx) (fromIntegral sy)
   Cairo.rectangle 0 0 (fromIntegral sw) (fromIntegral sh)
+  Cairo.fillPreserve
+
+  Cairo.setSourceSurface mask 0 0
   Cairo.fill
 
---   Cairo.setSourceSurface mask 0 0
---   Cairo.fill
-
   unpackColFor color Cairo.setSourceRGBA
-  Cairo.setOperator Cairo.OperatorHslHue
+  Cairo.setOperator Cairo.OperatorHslColor
   Cairo.maskSurface mask 0 0
   Cairo.fill
 

@@ -25,8 +25,8 @@ import Game.Sequoia.Keyboard
 
 magic :: Engine -> Now (Behavior Element)
 magic _ = do
-    return $ return $ centeredCollage 640 480 []
+    return $ return $ centeredCollage 640 480 [ toForm $ colorCorrectedImage "app/masktest.png" blue ]
 
 main :: IO ()
-main = play (EngineConfig (640, 480) "hello" black) magic return
+main = play (EngineConfig (640, 480) "hello" green) magic return
 

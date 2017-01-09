@@ -1,5 +1,6 @@
 {-# LANGUAGE NamedFieldPuns              #-}
 {-# LANGUAGE RecordWildCards             #-}
+{-# LANGUAGE ScopedTypeVariables         #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 
 -- Strongly inspired by Helm.
@@ -21,15 +22,17 @@ module Game.Sequoia
 
 import           Control.Applicative
 import           Control.Monad (forM_)
-import           Data.Bits ((.|.))
+import Data.Array.MArray
+import           Data.Bits ((.|.), (.&.), shift)
 import           Data.IORef (newIORef, readIORef, writeIORef)
 import qualified Data.Map as M
 import qualified Data.Text as T
+import           Data.Word (Word32)
 import           Foreign.C.String (withCAString)
 import           Foreign.Marshal.Alloc (alloca)
 import           Foreign.Ptr (nullPtr, castPtr)
 import           Foreign.Storable (peek)
-import           Game.Sequoia.Color
+import           Game.Sequoia.Color (Color (..), rgb, rgba)
 import           Game.Sequoia.Engine
 import           Game.Sequoia.Graphics
 import           Game.Sequoia.Signal
@@ -130,22 +133,55 @@ render e@(Engine { .. }) ps size@(w, h) =
         SDL.renderPresent renderer
 
 
-getSurface :: Engine -> FilePath -> IO (Cairo.Surface, Int, Int)
-getSurface (Engine { cache }) src = do
+createMask :: FilePath -> IO (Cairo.Surface, Int, Int)
+createMask src = do
+  surface <- Cairo.imageSurfaceCreateFromPNG src
+  w <- Cairo.imageSurfaceGetWidth surface
+  h <- Cairo.imageSurfaceGetHeight surface
+
+  pixels <- Cairo.imageSurfaceGetPixels surface
+
+  assocs <- getAssocs pixels
+  forM_ assocs $ \(i :: Int, pix :: Word32) -> do
+    let alpha = shift pix (-24) .&. 255
+        red   = shift pix (-16) .&. 255
+        green = shift pix (-8)  .&. 255
+        blue  =       pix       .&. 255
+        mono x = shift 255 24 .|. shift x 16 .|. shift x 8 .|. x
+        trans = 0
+
+    writeArray pixels i $
+      if alpha == 255 && red == blue && green == 0
+         then mono red
+         else trans
+
+  return (surface, w, h)
+
+
+
+getSurface :: Engine -> FilePath -> Mask -> IO (Cairo.Surface, Int, Int)
+getSurface (Engine { cache }) src mask = do
   cached <- Cairo.liftIO (readIORef cache)
 
-  case M.lookup src cached of
-    Just surface -> do
+  case (M.lookup (src, mask) cached, mask) of
+    (Just surface, _) -> do
       w <- Cairo.imageSurfaceGetWidth surface
       h <- Cairo.imageSurfaceGetHeight surface
 
       return (surface, w, h)
-    Nothing -> do
+
+    (Nothing, NoMask) -> do
       surface <- Cairo.imageSurfaceCreateFromPNG src
       w <- Cairo.imageSurfaceGetWidth surface
       h <- Cairo.imageSurfaceGetHeight surface
 
-      writeIORef cache (M.insert src surface cached) >> return (surface, w, h)
+      writeIORef cache (M.insert (src, mask) surface cached)
+      return (surface, w, h)
+
+    (Nothing, Mask) -> do
+      r@(surface, _, _) <- createMask src
+      writeIORef cache (M.insert (src, mask) surface cached)
+      return r
 
 {-| A utility function for rendering a specific element. -}
 renderElement :: Engine -> Element -> Cairo.Render ()
@@ -157,8 +193,8 @@ renderElement state (CollageElement w h center forms) = do
   mapM_ (renderForm state) forms
   Cairo.restore
 
-renderElement state (ImageElement crop src) = do
-  (surface, w, h) <- Cairo.liftIO $ getSurface state (normalise src)
+renderElement state (ImageElement crop Nothing src) = do
+  (surface, w, h) <- Cairo.liftIO $ getSurface state (normalise src) NoMask
   let (Crop sx sy sw sh) = maybe (Crop 0 0 w h) id crop
 
   Cairo.save
@@ -169,6 +205,30 @@ renderElement state (ImageElement crop src) = do
   Cairo.translate (fromIntegral sx) (fromIntegral sy)
   Cairo.rectangle 0 0 (fromIntegral sw) (fromIntegral sh)
   Cairo.fill
+  Cairo.restore
+
+renderElement state (ImageElement crop (Just color) src) = do
+  (surface, w, h) <- Cairo.liftIO $ getSurface state (normalise src) NoMask
+  (mask, _, _) <- Cairo.liftIO $ getSurface state (normalise src) Mask
+  let (Crop sx sy sw sh) = maybe (Crop 0 0 w h) id crop
+
+  Cairo.save
+  Cairo.translate (-fromIntegral sx) (-fromIntegral sy)
+  Cairo.scale 1 1
+
+  Cairo.setSourceSurface surface 0 0
+  Cairo.translate (fromIntegral sx) (fromIntegral sy)
+  Cairo.rectangle 0 0 (fromIntegral sw) (fromIntegral sh)
+  Cairo.fill
+
+--   Cairo.setSourceSurface mask 0 0
+--   Cairo.fill
+
+  unpackColFor color Cairo.setSourceRGBA
+  Cairo.setOperator Cairo.OperatorHslHue
+  Cairo.maskSurface mask 0 0
+  Cairo.fill
+
   Cairo.restore
 
 renderElement _ (TextElement (Text { textColor = (Color r g b a), .. })) = do

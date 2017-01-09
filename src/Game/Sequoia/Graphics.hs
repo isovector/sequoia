@@ -29,15 +29,18 @@ data Crop = Crop Int Int Int Int
   deriving (Show, Eq)
 
 data Element = CollageElement Int Int (Maybe (Double, Double)) [Form]
-             | ImageElement (Maybe Crop) FilePath
+             | ImageElement (Maybe Crop) (Maybe Color) FilePath
              | TextElement Text
              deriving (Show, Eq)
 
 image :: FilePath -> Element
-image src = ImageElement Nothing src
+image src = ImageElement Nothing Nothing src
+
+colorCorrectedImage :: FilePath -> Color -> Element
+colorCorrectedImage src color = ImageElement Nothing (Just color) src
 
 croppedImage :: Crop -> FilePath -> Element
-croppedImage crop src = ImageElement (Just crop) src
+croppedImage crop src = ImageElement (Just crop) Nothing src
 
 data Form = Form {
   formTheta :: Double,

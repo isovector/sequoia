@@ -25,8 +25,17 @@ import Game.Sequoia.Keyboard
 
 magic :: Engine -> Now (Behavior Element)
 magic _ = do
-    return $ return $ centeredCollage 640 480 [ toForm $ colorCorrectedImage "app/masktest.png" blue ]
+  clock <- getClock
+  return $ do
+    now <- sample $ totalTime clock
+    let r = (sin now + 1) / 2
+        g = (sin (now + pi * 2 / 3) + 1) / 2
+        b = (sin (now + pi * 4 / 3) + 1) / 2
+    return $ centeredCollage 640 480
+           . return
+           . toForm
+           $ colorCorrectedImage "app/masktest.png" $ rgb r g b
 
 main :: IO ()
-main = play (EngineConfig (640, 480) "hello" green) magic return
+main = play (EngineConfig (640, 480) "hello" black) magic return
 

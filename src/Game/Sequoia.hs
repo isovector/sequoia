@@ -1,6 +1,7 @@
 {-# LANGUAGE NamedFieldPuns              #-}
 {-# LANGUAGE RecordWildCards             #-}
 {-# LANGUAGE ScopedTypeVariables         #-}
+{-# LANGUAGE ViewPatterns                #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 
 -- Strongly inspired by Helm.
@@ -21,8 +22,8 @@ module Game.Sequoia
     ) where
 
 import           Control.Applicative
-import           Control.Monad (forM_)
-import Data.Array.MArray
+import           Control.Monad (forM_, when)
+import           Data.Array.MArray
 import           Data.Bits ((.|.), (.&.), shift)
 import           Data.IORef (newIORef, readIORef, writeIORef)
 import qualified Data.Map as M
@@ -65,14 +66,19 @@ startup (EngineConfig { .. }) = withCAString windowTitle $ \title -> do
         rflags = SDL.SDL_RENDERER_PRESENTVSYNC .|.
                  SDL.SDL_RENDERER_ACCELERATED
 
-    window   <- SDL.createWindow title 0 0 w h wflags
-    renderer <- SDL.createRenderer window (-1) rflags
-    cache    <- newIORef mempty
-    return Engine { window    = window
-                  , renderer  = renderer
-                  , continue  = True
-                  , backColor = windowColor
-                  , cache     = cache
+    window      <- SDL.createWindow title 0 0 w h wflags
+    renderer    <- SDL.createRenderer window (-1) rflags
+    cache       <- newIORef mempty
+    textureSize <- newIORef windowDimensions
+    bufferT     <- makeTexture renderer windowDimensions
+    buffer      <- newIORef bufferT
+    return Engine { window      = window
+                  , renderer    = renderer
+                  , continue    = True
+                  , backColor   = windowColor
+                  , cache       = cache
+                  , textureSize = textureSize
+                  , buffer      = buffer
                   }
 
 play :: EngineConfig
@@ -96,21 +102,34 @@ wantsQuit engine sceneSig dimSig = do
         render engine scene dims
         SDL.quitRequested
 
+makeTexture :: SDL.Renderer -> (Int, Int) -> IO SDL.Texture
+makeTexture renderer (w, h) = do
+  format <- SDL.masksToPixelFormatEnum 32 (fromBE32 0x0000ff00)
+                                          (fromBE32 0x00ff0000)
+                                          (fromBE32 0xff000000)
+                                          (fromBE32 0x000000ff)
+  SDL.createTexture renderer
+                    format
+                    SDL.SDL_TEXTUREACCESS_STREAMING
+                    (fromIntegral w)
+                    (fromIntegral h)
+
+rebuildTexture :: Engine -> (Int, Int) -> IO ()
+rebuildTexture Engine {..} size = do
+  curSize <- readIORef textureSize
+  when (curSize /= size) $ do
+    bufferT <- readIORef buffer
+    SDL.destroyTexture bufferT
+    bufferT' <- makeTexture renderer size
+    writeIORef buffer bufferT'
+
+
 render :: Engine -> Element -> (Int, Int) -> IO ()
 render e@(Engine { .. }) ps size@(w, h) =
     alloca $ \pixelsptr ->
     alloca $ \pitchptr  -> do
-        format <- SDL.masksToPixelFormatEnum 32 (fromBE32 0x0000ff00)
-                                                (fromBE32 0x00ff0000)
-                                                (fromBE32 0xff000000)
-                                                (fromBE32 0x000000ff)
-        texture <-
-            SDL.createTexture
-                renderer
-                format
-                SDL.SDL_TEXTUREACCESS_STREAMING
-                (fromIntegral w)
-                (fromIntegral h)
+        rebuildTexture e size
+        texture <- readIORef buffer
         SDL.lockTexture texture nullPtr pixelsptr pitchptr
         pixels <- peek pixelsptr
         pitch  <- fromIntegral <$> peek pitchptr
@@ -129,7 +148,6 @@ render e@(Engine { .. }) ps size@(w, h) =
         SDL.unlockTexture texture
         SDL.renderClear renderer
         SDL.renderCopy renderer texture nullPtr nullPtr
-        SDL.destroyTexture texture
         SDL.renderPresent renderer
 
 
@@ -300,6 +318,7 @@ setLineStyle (LineStyle { lineColor = Color r g b a, .. }) = do
     to render with a fill style and then fills afterwards. Assumes
     that all drawing paths have already been setup before being called. -}
 setFillStyle :: Engine -> FillStyle -> Cairo.Render ()
+setFillStyle _ (Texture _) = error "you can't set a fill on a texture, dingus"
 setFillStyle _ (Solid (Color r g b a)) = do
   Cairo.setSourceRGBA r g b a
   Cairo.fill

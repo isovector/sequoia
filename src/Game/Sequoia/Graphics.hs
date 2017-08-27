@@ -93,10 +93,12 @@ dashed color = defaultLine { lineColor = color, lineDashing = [8, 4] }
 dotted :: Color -> LineStyle
 dotted color = defaultLine { lineColor = color, lineDashing = [3, 3] }
 
-data FormStyle = PathForm LineStyle Path |
-                 ShapeForm (Either LineStyle FillStyle) Shape |
-                 ElementForm Element |
-                 GroupForm (Maybe Matrix) [Form] deriving (Show, Eq)
+data FormStyle
+  = PathForm LineStyle Path
+  | ShapeForm (Either LineStyle FillStyle) Shape
+  | ElementForm Element
+  | GroupForm (Maybe Matrix) [Form]
+  deriving (Show, Eq)
 
 form :: FormStyle -> Form
 form style = Form { formTheta = 0

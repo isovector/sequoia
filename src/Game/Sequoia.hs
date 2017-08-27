@@ -333,20 +333,25 @@ setFillStyle _ (Solid (Color r g b a)) = do
 renderForm :: Engine -> Form -> Cairo.Render ()
 renderForm state Form { .. } = withTransform formScaleX formScaleY formTheta formX formY $
   case formStyle of
-    PathForm style ~ps @ ((hx, hy) : _) -> do
-      setLineStyle style
+    PathForm _ [] -> pure ()
+
+    PathForm style ((hx, hy) : ps) -> do
+      Cairo.newPath
       Cairo.moveTo hx hy
       mapM_ (uncurry Cairo.lineTo) ps
+      setLineStyle style
 
     ShapeForm style shape -> do
       case shape of
-        PolygonShape ~ps @ ((hx, hy) : _) -> do
+        PolygonShape ~ps@((hx, hy) : _) -> do
           Cairo.newPath
           Cairo.moveTo hx hy
           mapM_ (uncurry Cairo.lineTo) ps
           Cairo.closePath
 
-        RectangleShape (w, h) -> Cairo.rectangle (-w / 2) (-h / 2) w h
+        RectangleShape (w, h) -> do
+          Cairo.newPath
+          Cairo.rectangle (-w / 2) (-h / 2) w h
 
         ArcShape (cx, cy) a1 a2 r (sx, sy) -> do
           Cairo.newPath

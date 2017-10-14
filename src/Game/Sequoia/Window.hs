@@ -2,6 +2,7 @@ module Game.Sequoia.Window
     ( getDimensions
     , mousePos
     , mouseButtons
+    , MouseButton (..)
     ) where
 
 import           Control.FRPNow.Core
@@ -11,7 +12,7 @@ import           Foreign.Storable
 import           GHC.Ptr (Ptr)
 import           Game.Sequoia.Engine
 import           Game.Sequoia.Signal
-import           SDL.Input.Mouse (MouseButton, getMouseButtons)
+import           SDL.Input.Mouse (MouseButton (..), getMouseButtons)
 import qualified SDL.Raw as SDL
 
 getDimensions :: Engine -> N (B (Int, Int))

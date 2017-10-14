@@ -1,5 +1,6 @@
 module Game.Sequoia.Window
     ( getDimensions
+    , mousePos
     ) where
 
 import Control.FRPNow.Core
@@ -16,6 +17,18 @@ getDimensions = liftWindow SDL.getWindowSize
 
 -- position :: Engine -> N (B (Int, Int))
 -- position = liftWindow SDL.getWindowPosition
+
+
+mousePos :: N (B (Int, Int))
+mousePos = poll $ sync lifted
+  where
+    lifted =
+      alloca $ \xptr ->
+      alloca $ \yptr -> do
+        _ <- SDL.getMouseState xptr yptr
+        x <- peek xptr
+        y <- peek yptr
+        pure (fromIntegral x, fromIntegral y)
 
 liftWindow :: (SDL.Window -> Ptr CInt -> Ptr CInt -> IO ())
            -> Engine

@@ -148,25 +148,28 @@ groupTransform :: Matrix -> [Form] -> Form
 groupTransform matrix forms = form (GroupForm (Just matrix) forms)
 
 rotate :: Double -> Form -> Form
-rotate t f = f { formTheta = t + formTheta f }
+rotate t f = group . pure $ f { formTheta = t + formTheta f }
 
 scale :: Double -> Form -> Form
-scale n f = f { formScaleX = n * formScaleX f
-              , formScaleY = n * formScaleY f
-              }
+scale n f = group . pure $ f
+          { formScaleX = n * formScaleX f
+          , formScaleY = n * formScaleY f
+          }
 
 scaleXY :: Double -> Double -> Form -> Form
-scaleXY x y f = f { formScaleX = x * formScaleX f
-                  , formScaleY = y * formScaleY f
-                  }
+scaleXY x y f = group . pure $ f
+              { formScaleX = x * formScaleX f
+              , formScaleY = y * formScaleY f
+              }
 
 flipX :: Form -> Form
-flipX f = f { formScaleX = negate $ formScaleX f
-            }
+flipX f = group . pure $ f
+        { formScaleX = negate $ formScaleX f
+        }
 
 move :: V2 -> Form -> Form
-move (V2 rx ry) f = f { formX = rx + formX f, formY = ry + formY f }
-move _ _ = undefined
+move (V2 rx ry) f = group . pure $ f { formX = rx + formX f, formY = ry + formY f }
+move _ _ = error "pattern synonym exhaustivity"
 
 collage :: Int -> Int -> [Form] -> Element
 collage w h = CollageElement w h Nothing

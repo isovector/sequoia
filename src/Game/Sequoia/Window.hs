@@ -1,15 +1,17 @@
 module Game.Sequoia.Window
     ( getDimensions
     , mousePos
+    , mouseButtons
     ) where
 
-import Control.FRPNow.Core
-import Foreign.C.Types (CInt)
-import Foreign.Marshal.Alloc (alloca)
-import Foreign.Storable
-import GHC.Ptr (Ptr)
-import Game.Sequoia.Engine
-import Game.Sequoia.Signal
+import           Control.FRPNow.Core
+import           Foreign.C.Types (CInt)
+import           Foreign.Marshal.Alloc (alloca)
+import           Foreign.Storable
+import           GHC.Ptr (Ptr)
+import           Game.Sequoia.Engine
+import           Game.Sequoia.Signal
+import           SDL.Input.Mouse (MouseButton, getMouseButtons)
 import qualified SDL.Raw as SDL
 
 getDimensions :: Engine -> N (B (Int, Int))
@@ -29,6 +31,11 @@ mousePos = poll $ sync lifted
         x <- peek xptr
         y <- peek yptr
         pure (fromIntegral x, fromIntegral y)
+
+
+mouseButtons :: N (B (MouseButton -> Bool))
+mouseButtons = poll $ sync getMouseButtons
+
 
 liftWindow :: (SDL.Window -> Ptr CInt -> Ptr CInt -> IO ())
            -> Engine

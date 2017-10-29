@@ -1,13 +1,12 @@
 packages:
 - '.'
-- '../bones'
 # - location:
 #     git: https://github.com/isovector/SG.git
 #     commit: fe733adab45bf6abb1a1a9457f398b96fe643e68
 
-resolver: lts-7.1
+resolver: lts-9.0
 extra-deps:
-    - sdl2-2.1.3
+    - sdl2-2.3.0
     - frpnow-0.18
 
 flags: {}

@@ -9,7 +9,7 @@
 
 module Game.Sequoia
     ( EngineConfig (..)
-    , play
+    , module Game.Sequoia
     , module Control.Applicative
     , module Game.Sequoia.Graphics
     , module Game.Sequoia.Signal

@@ -8,6 +8,7 @@ module Game.Sequoia.Keyboard
     , keyPress
     , arrows
     , wasd
+    , getKeyState
     ) where
 
 import Control.FRPNow.EvStream

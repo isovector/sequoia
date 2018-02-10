@@ -6,32 +6,36 @@ import           Game.Sequoia.Types
 import           Graphics.Rendering.Cairo.Matrix (Matrix (..))
 
 
-data FontWeight = LightWeight
-                | NormalWeight
-                | BoldWeight
-                deriving (Show, Eq, Ord, Enum, Read)
+data FontWeight
+  = LightWeight
+  | NormalWeight
+  | BoldWeight
+  deriving (Show, Eq, Ord, Enum, Read)
 
-data FontStyle = NormalStyle
-               | ObliqueStyle
-               | ItalicStyle
-               deriving (Show, Eq, Ord, Enum, Read)
+data FontStyle
+  = NormalStyle
+  | ObliqueStyle
+  | ItalicStyle
+  deriving (Show, Eq, Ord, Enum, Read)
 
-data Text = Text {
-  textUTF8 :: T.Text,
-  textColor :: Color,
-  textTypeface :: T.Text,
-  textHeight :: Double,
-  textWeight :: FontWeight,
-  textStyle :: FontStyle
-} deriving (Show, Eq)
+data Text = Text
+  { textUTF8     :: T.Text
+  , textColor    :: Color
+  , textTypeface :: T.Text
+  , textHeight   :: Double
+  , textWeight   :: FontWeight
+  , textStyle    :: FontStyle
+  , textStroke   :: Maybe LineStyle
+  } deriving (Show, Eq)
 
 data Crop = Crop Int Int Int Int
   deriving (Show, Eq)
 
-data Element = CollageElement Int Int (Maybe (Double, Double)) [Form]
-             | ImageElement (Maybe Crop) (Maybe Color) FilePath
-             | TextElement Text
-             deriving (Show, Eq)
+data Element
+  = CollageElement Int Int (Maybe (Double, Double)) [Form]
+  | ImageElement (Maybe Crop) (Maybe Color) FilePath
+  | TextElement Text
+  deriving (Show, Eq)
 
 image :: FilePath -> Element
 image src = ImageElement Nothing Nothing src
@@ -42,47 +46,50 @@ colorCorrectedImage src color = ImageElement Nothing (Just color) src
 croppedImage :: Crop -> FilePath -> Element
 croppedImage crop src = ImageElement (Just crop) Nothing src
 
-data Form = Form {
-  formTheta :: Double,
-  formScaleX :: Double,
-  formScaleY :: Double,
-  formX :: Double,
-  formY :: Double,
-  formStyle :: FormStyle
-} deriving (Show, Eq)
+data Form = Form
+  { formTheta  :: Double
+  , formScaleX :: Double
+  , formScaleY :: Double
+  , formX      :: Double
+  , formY      :: Double
+  , formStyle  :: FormStyle
+  } deriving (Show, Eq)
 
-data FillStyle = Solid Color
-               | Texture String
-               deriving (Show, Eq, Ord, Read)
+data FillStyle
+  = Solid Color
+  | Texture String
+  deriving (Show, Eq, Ord, Read)
 
-data LineCap = FlatCap
-             | RoundCap
-             | PaddedCap
-             deriving (Show, Eq, Enum, Ord, Read)
+data LineCap
+  = FlatCap
+  | RoundCap
+  | PaddedCap
+  deriving (Show, Eq, Enum, Ord, Read)
 
-data LineJoin = SmoothJoin
-              | SharpJoin Double
-              | ClippedJoin
-              deriving (Show, Eq, Ord, Read)
+data LineJoin
+  = SmoothJoin
+  | SharpJoin Double
+  | ClippedJoin
+  deriving (Show, Eq, Ord, Read)
 
-data LineStyle = LineStyle {
-  lineColor :: Color,
-  lineWidth :: Double,
-  lineCap :: LineCap,
-  lineJoin :: LineJoin,
-  lineDashing :: [Double],
-  lineDashOffset :: Double
-} deriving (Show, Eq)
+data LineStyle = LineStyle
+  { lineColor      :: Color
+  , lineWidth      :: Double
+  , lineCap        :: LineCap
+  , lineJoin       :: LineJoin
+  , lineDashing    :: [Double]
+  , lineDashOffset :: Double
+  } deriving (Show, Eq)
 
 defaultLine :: LineStyle
-defaultLine = LineStyle {
-  lineColor = black,
-  lineWidth = 1,
-  lineCap = FlatCap,
-  lineJoin = SharpJoin 10,
-  lineDashing = [],
-  lineDashOffset = 0
-}
+defaultLine = LineStyle
+  { lineColor      = black
+  , lineWidth      = 1
+  , lineCap        = FlatCap
+  , lineJoin       = SharpJoin 10
+  , lineDashing    = []
+  , lineDashOffset = 0
+  }
 
 solid :: Color -> LineStyle
 solid color = defaultLine { lineColor = color }
@@ -101,13 +108,14 @@ data FormStyle
   deriving (Show, Eq)
 
 form :: FormStyle -> Form
-form style = Form { formTheta = 0
-                  , formScaleX = 1
-                  , formScaleY = 1
-                  , formX = 0
-                  , formY = 0
-                  , formStyle = style
-                  }
+form style = Form
+  { formTheta  = 0
+  , formScaleX = 1
+  , formScaleY = 1
+  , formX      = 0
+  , formY      = 0
+  , formStyle  = style
+  }
 
 fill :: FillStyle -> Shape -> Form
 fill style = form . ShapeForm (Right style)
@@ -125,12 +133,15 @@ traced :: LineStyle -> Path -> Form
 traced style p = form (PathForm style p)
 
 traced' :: Color -> Shape -> Form
-traced' c = outlined (defaultLine { lineColor = c
-                                  , lineDashing = [8, 4]
-                                  })
+traced' c = outlined defaultLine
+  { lineColor = c
+  , lineDashing = [8, 4]
+  }
 
 outlined' :: Color -> Shape -> Form
-outlined' c = outlined (defaultLine { lineColor = c } )
+outlined' c = outlined defaultLine
+  { lineColor = c
+  }
 
 sprite :: FilePath -> Form
 sprite = toForm . image
@@ -188,10 +199,11 @@ path = fmap unpackV2
 segment :: (Double, Double) -> (Double, Double) -> Path
 segment p1 p2 = [p1, p2]
 
-data Shape = PolygonShape Path
-           | RectangleShape (Double, Double)
-           | ArcShape (Double, Double) Double Double Double (Double, Double)
-           deriving (Show, Eq, Ord, Read)
+data Shape
+  = PolygonShape Path
+  | RectangleShape (Double, Double)
+  | ArcShape (Double, Double) Double Double Double (Double, Double)
+  deriving (Show, Eq, Ord, Read)
 
 polygon :: [V2] -> Shape
 polygon = PolygonShape . path

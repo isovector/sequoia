@@ -1,40 +1,23 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Game.Sequoia.Text (
-  -- * Elements
-  plainText,
-  asText,
-  text,
-  -- * Composing
-  defaultText,
-  toText,
-  -- * Formatting
-  light,
-  bold,
-  italic,
-  oblique,
-  color,
-  monospace,
-  typeface,
-  header,
-  height
-) where
+module Game.Sequoia.Text where
 
 import Game.Sequoia.Color (Color, black)
-import Game.Sequoia.Graphics (Element(TextElement), Text(..), FontWeight(..), FontStyle(..))
+import Game.Sequoia.Graphics
 import qualified Data.Text as T
 
 {-| Creates the default text. By default the text is black sans-serif
     with a height of 14pt. -}
 defaultText :: Text
-defaultText = Text {
-  textUTF8 = "",
-  textColor = black,
-  textTypeface = "sans-serif",
-  textHeight = 14,
-  textWeight = NormalWeight,
-  textStyle = NormalStyle
-}
+defaultText = Text
+  { textUTF8     = ""
+  , textColor    = black
+  , textTypeface = "sans-serif"
+  , textHeight   = 14
+  , textWeight   = NormalWeight
+  , textStyle    = NormalStyle
+  , textStroke   = Nothing
+  }
 
 {-| Creates a text from a string. -}
 toText :: T.Text -> Text
@@ -97,3 +80,6 @@ header = height 32
 {-| Sets the size of a piece of text. -}
 height :: Double -> Text -> Text
 height size txt = txt { textHeight = size }
+
+stroke :: LineStyle -> Text -> Text
+stroke ls txt = txt { textStroke = Just ls }

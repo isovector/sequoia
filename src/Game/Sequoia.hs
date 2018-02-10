@@ -25,6 +25,7 @@ import           Control.Applicative
 import           Control.Monad (forM_, when)
 import           Data.Array.MArray
 import           Data.Bits ((.|.), (.&.), shift)
+import           Data.Foldable (for_)
 import           Data.IORef (newIORef, readIORef, writeIORef)
 import qualified Data.Map as M
 import qualified Data.Text as T
@@ -262,6 +263,11 @@ renderElement _ (TextElement (Text { textColor = (Color r g b a), .. })) = do
     Pango.PangoRectangle x y w h <- fmap snd $ Cairo.liftIO $ Pango.layoutGetExtents layout
 
     Cairo.translate ((-w / 2) -x) ((-h / 2) - y)
+
+    for_ textStroke $ \ls -> do
+      Pango.layoutPath layout
+      setLineStyle ls
+
     Cairo.setSourceRGBA r g b a
     Pango.showLayout layout
     Cairo.restore

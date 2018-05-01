@@ -55,6 +55,11 @@ data Form = Form
   , formStyle  :: FormStyle
   } deriving (Show, Eq)
 
+instance Monoid Form where
+  mempty = group []
+  mappend a b = group [a, b]
+  mconcat = group
+
 data FillStyle
   = Solid Color
   | Texture String

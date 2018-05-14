@@ -190,7 +190,7 @@ getSurface (Engine { cache }) src mask = do
       return (surface, w, h)
 
     (Nothing, NoMask) -> do
-      surface <- Cairo.imageSurfaceCreateFromPNG src
+      surface <- Cairo.imageSurfaceCreateFromPNG $ normalise src
       w <- Cairo.imageSurfaceGetWidth surface
       h <- Cairo.imageSurfaceGetHeight surface
 
@@ -198,7 +198,7 @@ getSurface (Engine { cache }) src mask = do
       return (surface, w, h)
 
     (Nothing, Mask) -> do
-      r@(surface, _, _) <- createMask src
+      r@(surface, _, _) <- createMask $ normalise src
       writeIORef cache (M.insert (src, mask) surface cached)
       return r
 
@@ -213,22 +213,28 @@ renderElement state (CollageElement w h center forms) = do
   Cairo.restore
 
 renderElement state (ImageElement crop Nothing src) = do
-  (surface, w, h) <- Cairo.liftIO $ getSurface state (normalise src) NoMask
-  let (Crop sx sy sw sh) = maybe (Crop 0 0 w h) id crop
+  (surface, w, h) <- Cairo.liftIO $ getSurface state src NoMask
+  let (sx, sy, sw, sh) =
+        case crop of
+          Just (Crop (fromIntegral -> sx')
+                     (fromIntegral -> sy')
+                     (fromIntegral -> sw')
+                     (fromIntegral -> sh')) -> (sx', sy', sw', sh')
+          Nothing -> (0, 0, fromIntegral w, fromIntegral h)
 
   Cairo.save
-  Cairo.translate (-fromIntegral sx) (-fromIntegral sy)
+  Cairo.translate (-sx) (-sy)
   Cairo.scale 1 1
 
   Cairo.setSourceSurface surface 0 0
-  Cairo.translate (fromIntegral sx) (fromIntegral sy)
-  Cairo.rectangle 0 0 (fromIntegral sw) (fromIntegral sh)
+  Cairo.translate sx sy
+  Cairo.rectangle 0 0 sw sh
   Cairo.fill
   Cairo.restore
 
 renderElement state (ImageElement crop (Just color) src) = do
-  (surface, w, h) <- Cairo.liftIO $ getSurface state (normalise src) NoMask
-  (mask, _, _) <- Cairo.liftIO $ getSurface state (normalise src) Mask
+  (surface, w, h) <- Cairo.liftIO $ getSurface state src NoMask
+  (mask, _, _) <- Cairo.liftIO $ getSurface state src Mask
   let (Crop sx sy sw sh) = maybe (Crop 0 0 w h) id crop
 
   Cairo.save
@@ -255,10 +261,12 @@ renderElement _ (TextElement (Text { textColor = (Color r g b a), .. })) = do
 
     layout <- Pango.createLayout textUTF8
 
-    Cairo.liftIO $ Pango.layoutSetAttributes layout [Pango.AttrFamily { paStart = i, paEnd = j, paFamily = textTypeface },
-                                                     Pango.AttrWeight { paStart = i, paEnd = j, paWeight = mapFontWeight textWeight },
-                                                     Pango.AttrStyle { paStart = i, paEnd = j, paStyle = mapFontStyle textStyle },
-                                                     Pango.AttrSize { paStart = i, paEnd = j, paSize = textHeight }]
+    Cairo.liftIO $ Pango.layoutSetAttributes layout
+      [ Pango.AttrFamily { paStart = i, paEnd = j, paFamily = textTypeface }
+      , Pango.AttrWeight { paStart = i, paEnd = j, paWeight = mapFontWeight textWeight }
+      , Pango.AttrStyle  { paStart = i, paEnd = j, paStyle = mapFontStyle textStyle }
+      , Pango.AttrSize   { paStart = i, paEnd = j, paSize = textHeight }
+      ]
 
     Pango.PangoRectangle x y w h <- fmap snd $ Cairo.liftIO $ Pango.layoutGetExtents layout
 
@@ -330,7 +338,7 @@ setFillStyle _ (Solid (Color r g b a)) = do
   Cairo.fill
 
 -- setFillStyle state (Texture src) = do
---   (surface, _, _) <- Cairo.liftIO $ getSurface state (normalise src)
+--   (surface, _, _) <- Cairo.liftIO $ getSurface state src
 --   Cairo.setSourceSurface surface 0 0
 --   Cairo.getSource >>= flip Cairo.patternSetExtend Cairo.ExtendRepeat
 --   Cairo.fill

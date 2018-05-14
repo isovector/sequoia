@@ -18,15 +18,9 @@ module Game.Sequoia.Types
 
 import           Linear.Metric (distance, norm, signorm, dot)
 import qualified Linear.V2 as LV2
-import           Linear.V2 hiding (V2)
+import           Linear.V2 hiding (V2 ())
 import qualified Linear.V3 as LV3
-import           Linear.V3 hiding (V3)
-
-pattern V2 :: Double -> Double -> V2
-pattern V2 x y = LV2.V2 x y
-
-pattern V3 :: Double -> Double -> Double -> V3
-pattern V3 x y z = LV3.V3 x y z
+import           Linear.V3 hiding (V3 ())
 
 type V2 = LV2.V2 Double
 type V3 = LV3.V3 Double

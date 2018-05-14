@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -funbox-strict-fields #-}
+
 module Game.Sequoia.Graphics where
 
 import qualified Data.Text as T
@@ -19,22 +21,22 @@ data FontStyle
   deriving (Show, Eq, Ord, Enum, Read)
 
 data Text = Text
-  { textUTF8     :: T.Text
-  , textColor    :: Color
-  , textTypeface :: T.Text
-  , textHeight   :: Double
-  , textWeight   :: FontWeight
-  , textStyle    :: FontStyle
-  , textStroke   :: Maybe LineStyle
+  { textUTF8     :: !T.Text
+  , textColor    :: !Color
+  , textTypeface :: !T.Text
+  , textHeight   :: !Double
+  , textWeight   :: !FontWeight
+  , textStyle    :: !FontStyle
+  , textStroke   :: !(Maybe LineStyle)
   } deriving (Show, Eq)
 
-data Crop = Crop Int Int Int Int
+data Crop = Crop !Int !Int !Int !Int
   deriving (Show, Eq)
 
 data Element
-  = CollageElement Int Int (Maybe (Double, Double)) [Form]
-  | ImageElement (Maybe Crop) (Maybe Color) FilePath
-  | TextElement Text
+  = CollageElement !Int !Int !(Maybe (Double, Double)) ![Form]
+  | ImageElement !(Maybe Crop) !(Maybe Color) !FilePath
+  | TextElement !Text
   deriving (Show, Eq)
 
 image :: FilePath -> Element
@@ -47,12 +49,12 @@ croppedImage :: Crop -> FilePath -> Element
 croppedImage crop src = ImageElement (Just crop) Nothing src
 
 data Form = Form
-  { formTheta  :: Double
-  , formScaleX :: Double
-  , formScaleY :: Double
-  , formX      :: Double
-  , formY      :: Double
-  , formStyle  :: FormStyle
+  { formTheta  :: !Double
+  , formScaleX :: !Double
+  , formScaleY :: !Double
+  , formX      :: !Double
+  , formY      :: !Double
+  , formStyle  :: !FormStyle
   } deriving (Show, Eq)
 
 instance Monoid Form where
@@ -61,8 +63,8 @@ instance Monoid Form where
   mconcat = group
 
 data FillStyle
-  = Solid Color
-  | Texture String
+  = Solid !Color
+  | Texture !String
   deriving (Show, Eq, Ord, Read)
 
 data LineCap
@@ -73,17 +75,17 @@ data LineCap
 
 data LineJoin
   = SmoothJoin
-  | SharpJoin Double
+  | SharpJoin !Double
   | ClippedJoin
   deriving (Show, Eq, Ord, Read)
 
 data LineStyle = LineStyle
-  { lineColor      :: Color
-  , lineWidth      :: Double
-  , lineCap        :: LineCap
-  , lineJoin       :: LineJoin
-  , lineDashing    :: [Double]
-  , lineDashOffset :: Double
+  { lineColor      :: !Color
+  , lineWidth      :: !Double
+  , lineCap        :: !LineCap
+  , lineJoin       :: !LineJoin
+  , lineDashing    :: ![Double]
+  , lineDashOffset :: !Double
   } deriving (Show, Eq)
 
 defaultLine :: LineStyle
@@ -106,10 +108,10 @@ dotted :: Color -> LineStyle
 dotted color = defaultLine { lineColor = color, lineDashing = [3, 3] }
 
 data FormStyle
-  = PathForm LineStyle Path
-  | ShapeForm (Either LineStyle FillStyle) Shape
-  | ElementForm Element
-  | GroupForm (Maybe Matrix) [Form]
+  = PathForm !LineStyle !Path
+  | ShapeForm !(Either LineStyle FillStyle) !Shape
+  | ElementForm !Element
+  | GroupForm !(Maybe Matrix) ![Form]
   deriving (Show, Eq)
 
 form :: FormStyle -> Form
@@ -185,7 +187,6 @@ flipX f = group . pure $ f
 
 move :: V2 -> Form -> Form
 move (V2 rx ry) f = group . pure $ f { formX = rx + formX f, formY = ry + formY f }
-move _ _ = error "pattern synonym exhaustivity"
 
 collage :: Int -> Int -> [Form] -> Element
 collage w h = CollageElement w h Nothing
@@ -205,9 +206,9 @@ segment :: (Double, Double) -> (Double, Double) -> Path
 segment p1 p2 = [p1, p2]
 
 data Shape
-  = PolygonShape Path
-  | RectangleShape (Double, Double)
-  | ArcShape (Double, Double) Double Double Double (Double, Double)
+  = PolygonShape !Path
+  | RectangleShape !(Double, Double)
+  | ArcShape !(Double, Double) !Double !Double !Double !(Double, Double)
   deriving (Show, Eq, Ord, Read)
 
 polygon :: [V2] -> Shape

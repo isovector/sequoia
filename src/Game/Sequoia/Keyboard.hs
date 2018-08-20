@@ -1,5 +1,7 @@
--- Shamelessly stolen from Helm
+{-# LANGUAGE DeriveDataTypeable #-}
+
 -- See: http://helm-engine.org
+-- Shamelessly stolen from Helm
 
 module Game.Sequoia.Keyboard
     ( Key(..)
@@ -11,6 +13,7 @@ module Game.Sequoia.Keyboard
     , getKeyState
     ) where
 
+import Data.Data
 import Control.FRPNow.EvStream
 import Data.List (elemIndices)
 import Foreign hiding (shift)
@@ -269,7 +272,7 @@ data Key = AKey
          | SleepKey
          | App1Key
          | App2Key
-         deriving (Show, Eq, Ord, Read, Bounded)
+         deriving (Show, Eq, Ord, Read, Bounded, Data)
 
 instance Enum Key where
     fromEnum AKey = 4

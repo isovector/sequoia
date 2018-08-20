@@ -1,7 +1,11 @@
+{-# LANGUAGE DeriveDataTypeable       #-}
+{-# LANGUAGE StandaloneDeriving       #-}
 {-# OPTIONS_GHC -funbox-strict-fields #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Game.Sequoia.Graphics where
 
+import           Data.Data
 import qualified Data.Text as T
 import           Game.Sequoia.Color (Color, black)
 import           Game.Sequoia.Types
@@ -12,13 +16,13 @@ data FontWeight
   = LightWeight
   | NormalWeight
   | BoldWeight
-  deriving (Show, Eq, Ord, Enum, Read)
+  deriving (Show, Eq, Ord, Enum, Read, Data)
 
 data FontStyle
   = NormalStyle
   | ObliqueStyle
   | ItalicStyle
-  deriving (Show, Eq, Ord, Enum, Read)
+  deriving (Show, Eq, Ord, Enum, Read, Data)
 
 data Text = Text
   { textUTF8     :: !T.Text
@@ -28,16 +32,16 @@ data Text = Text
   , textWeight   :: !FontWeight
   , textStyle    :: !FontStyle
   , textStroke   :: !(Maybe LineStyle)
-  } deriving (Show, Eq)
+  } deriving (Show, Eq, Data)
 
 data Crop = Crop !Int !Int !Int !Int
-  deriving (Show, Eq)
+  deriving (Show, Eq, Data)
 
 data Element
   = CollageElement !Int !Int !(Maybe (Double, Double)) ![Form]
   | ImageElement !(Maybe Crop) !(Maybe Color) !FilePath
   | TextElement !Text
-  deriving (Show, Eq)
+  deriving (Show, Eq, Data)
 
 image :: FilePath -> Element
 image src = ImageElement Nothing Nothing src
@@ -55,7 +59,7 @@ data Form = Form
   , formX      :: !Double
   , formY      :: !Double
   , formStyle  :: !FormStyle
-  } deriving (Show, Eq)
+  } deriving (Show, Eq, Data)
 
 instance Monoid Form where
   mempty = group []
@@ -65,19 +69,19 @@ instance Monoid Form where
 data FillStyle
   = Solid !Color
   | Texture !String
-  deriving (Show, Eq, Ord, Read)
+  deriving (Show, Eq, Ord, Read, Data)
 
 data LineCap
   = FlatCap
   | RoundCap
   | PaddedCap
-  deriving (Show, Eq, Enum, Ord, Read)
+  deriving (Show, Eq, Enum, Ord, Read, Data)
 
 data LineJoin
   = SmoothJoin
   | SharpJoin !Double
   | ClippedJoin
-  deriving (Show, Eq, Ord, Read)
+  deriving (Show, Eq, Ord, Read, Data)
 
 data LineStyle = LineStyle
   { lineColor      :: !Color
@@ -86,7 +90,7 @@ data LineStyle = LineStyle
   , lineJoin       :: !LineJoin
   , lineDashing    :: ![Double]
   , lineDashOffset :: !Double
-  } deriving (Show, Eq)
+  } deriving (Show, Eq, Data)
 
 defaultLine :: LineStyle
 defaultLine = LineStyle
@@ -112,7 +116,9 @@ data FormStyle
   | ShapeForm !(Either LineStyle FillStyle) !Shape
   | ElementForm !Element
   | GroupForm !(Maybe Matrix) ![Form]
-  deriving (Show, Eq)
+  deriving (Show, Eq, Data)
+
+deriving instance Data Matrix
 
 form :: FormStyle -> Form
 form style = Form
@@ -209,7 +215,7 @@ data Shape
   = PolygonShape !Path
   | RectangleShape !(Double, Double)
   | ArcShape !(Double, Double) !Double !Double !Double !(Double, Double)
-  deriving (Show, Eq, Ord, Read)
+  deriving (Show, Eq, Ord, Read, Data)
 
 polygon :: [V2] -> Shape
 polygon = PolygonShape . path

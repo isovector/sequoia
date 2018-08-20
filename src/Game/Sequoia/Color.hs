@@ -1,4 +1,6 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric      #-}
+
 -- Shamelessly stolen from Helm
 -- See: http://helm-engine.org
 
@@ -34,11 +36,12 @@ module Game.Sequoia.Color (
 ) where
 
 import GHC.Generics
+import Data.Data
 
 {-| A data structure describing a color. It is represented interally as an RGBA
     color, but the utility functions 'hsva', 'hsv', etc. can be used to convert
     from other popular formats to this structure. -}
-data Color = Color Double Double Double Double deriving (Show, Eq, Ord, Read, Generic)
+data Color = Color Double Double Double Double deriving (Show, Eq, Ord, Read, Generic, Data)
 
 {-| Creates an RGB color. -}
 rgb :: Double -> Double -> Double -> Color

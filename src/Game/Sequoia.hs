@@ -178,29 +178,32 @@ createMask src = do
 
 
 
-getSurface :: Engine -> FilePath -> Mask -> IO (Cairo.Surface, Int, Int)
+getSurface :: Engine -> FilePath -> Mask -> IO (Cairo.Surface, Double, Double)
 getSurface (Engine { cache }) src mask = do
   cached <- Cairo.liftIO (readIORef cache)
 
   case (M.lookup (src, mask) cached, mask) of
-    (Just surface, _) -> do
-      w <- Cairo.imageSurfaceGetWidth surface
-      h <- Cairo.imageSurfaceGetHeight surface
-
+    (Just (surface, w, h), _) -> do
       return (surface, w, h)
 
     (Nothing, NoMask) -> do
       surface <- Cairo.imageSurfaceCreateFromPNG $ normalise src
-      w <- Cairo.imageSurfaceGetWidth surface
-      h <- Cairo.imageSurfaceGetHeight surface
+      (w, h) <- getSurfaceSize surface
 
-      writeIORef cache (M.insert (src, mask) surface cached)
+      writeIORef cache (M.insert (src, mask) (surface, w, h) cached)
       return (surface, w, h)
 
     (Nothing, Mask) -> do
-      r@(surface, _, _) <- createMask $ normalise src
-      writeIORef cache (M.insert (src, mask) surface cached)
-      return r
+      (surface, _, _) <- createMask $ normalise src
+      (w, h) <- getSurfaceSize surface
+      writeIORef cache (M.insert (src, mask) (surface, w, h) cached)
+      return (surface, w, h)
+
+getSurfaceSize :: Cairo.Surface -> IO (Double, Double)
+getSurfaceSize surface = do
+  w <- Cairo.imageSurfaceGetWidth surface
+  h <- Cairo.imageSurfaceGetHeight surface
+  pure (fromIntegral w, fromIntegral h)
 
 {-| A utility function for rendering a specific element. -}
 renderElement :: Engine -> Element -> Cairo.Render ()
@@ -216,11 +219,11 @@ renderElement state (ImageElement crop Nothing src) = do
   (surface, w, h) <- Cairo.liftIO $ getSurface state src NoMask
   let (sx, sy, sw, sh) =
         case crop of
-          Just (Crop (fromIntegral -> sx')
-                     (fromIntegral -> sy')
-                     (fromIntegral -> sw')
-                     (fromIntegral -> sh')) -> (sx', sy', sw', sh')
-          Nothing -> (0, 0, fromIntegral w, fromIntegral h)
+          Just (Crop (sx')
+                     (sy')
+                     (sw')
+                     (sh')) -> (sx', sy', sw', sh')
+          Nothing -> (0, 0, w, h)
 
   Cairo.save
   Cairo.translate (-sx) (-sy)
@@ -238,12 +241,12 @@ renderElement state (ImageElement crop (Just color) src) = do
   let (Crop sx sy sw sh) = maybe (Crop 0 0 w h) id crop
 
   Cairo.save
-  Cairo.translate (-fromIntegral sx) (-fromIntegral sy)
+  Cairo.translate (-sx) (-sy)
   Cairo.scale 1 1
 
   Cairo.setSourceSurface surface 0 0
-  Cairo.translate (fromIntegral sx) (fromIntegral sy)
-  Cairo.rectangle 0 0 (fromIntegral sw) (fromIntegral sh)
+  Cairo.translate sx sy
+  Cairo.rectangle 0 0 sw sh
   Cairo.fillPreserve
 
   Cairo.setSourceSurface mask 0 0
@@ -300,7 +303,11 @@ mapFontStyle style = case style of
 
 {-| A utility function that goes into a state of transformation and then pops it when finished. -}
 withTransform :: Double -> Double -> Double -> Double -> Double -> Cairo.Render () -> Cairo.Render ()
-withTransform sx sy t x y f = Cairo.save >> Cairo.scale sx sy >> Cairo.translate x y >> Cairo.rotate t >> f >> Cairo.restore
+withTransform sx sy t x y f = do
+  Cairo.scale sx sy
+  Cairo.translate x y
+  Cairo.rotate t
+  f
 
 {-| A utility function that sets the Cairo line cap based off of our version. -}
 setLineCap :: LineCap -> Cairo.Render ()

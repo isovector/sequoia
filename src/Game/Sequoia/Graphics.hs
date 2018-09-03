@@ -34,7 +34,7 @@ data Text = Text
   , textStroke   :: !(Maybe LineStyle)
   } deriving (Show, Eq, Data)
 
-data Crop = Crop !Int !Int !Int !Int
+data Crop = Crop !Double !Double !Double !Double
   deriving (Show, Eq, Data)
 
 data Element

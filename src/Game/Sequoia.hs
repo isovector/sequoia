@@ -21,6 +21,8 @@ module Game.Sequoia
     , rgba
     ) where
 
+import Control.Monad.IO.Class
+import Control.Exception
 import           Control.Applicative
 import           Control.Monad (forM_, when)
 import           Data.Array.MArray
@@ -67,6 +69,7 @@ startup (EngineConfig { .. }) = withCAString windowTitle $ \title -> do
         rflags = SDL.SDL_RENDERER_PRESENTVSYNC .|.
                  SDL.SDL_RENDERER_ACCELERATED
 
+    SDL.init SDL.SDL_INIT_EVENTS
     window      <- SDL.createWindow title 0 0 w h wflags
     renderer    <- SDL.createRenderer window (-1) rflags
     cache       <- newIORef mempty
@@ -87,21 +90,29 @@ play :: EngineConfig
      -> (i -> N (B Element))
      -> IO ()
 play cfg initial sceneN = do
-    runNowMaster $ do
+    engine <- runNowMaster $ do
         engine   <- sync $ startup cfg
         sceneSig <- initial engine >>= sceneN
         dimSig   <- getDimensions engine
         quit     <- poll $ wantsQuit engine sceneSig dimSig
-        sample $ whenE quit
-    SDL.quit
+        fmap (engine <$) $ sample $ whenE quit
+    quitGracefully engine
 
 wantsQuit :: Engine -> B Element -> B (Int, Int) -> N Bool
 wantsQuit engine sceneSig dimSig = do
     scene <- sample sceneSig
     dims  <- sample dimSig
     sync $ do
-        render engine scene dims
+        onException (render engine scene dims) $ quitGracefully engine
         SDL.quitRequested
+
+
+quitGracefully :: Engine -> IO ()
+quitGracefully engine = do
+  let w = window engine
+  SDL.hideWindow w
+  SDL.destroyWindow w
+  SDL.quit
 
 makeTexture :: SDL.Renderer -> (Int, Int) -> IO SDL.Texture
 makeTexture renderer (w, h) = do

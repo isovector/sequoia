@@ -61,9 +61,11 @@ data Form = Form
   , formStyle  :: !FormStyle
   } deriving (Show, Eq, Data)
 
+instance Semigroup Form where
+  (<>) a b = group [a, b]
+
 instance Monoid Form where
   mempty = group []
-  mappend a b = group [a, b]
   mconcat = group
 
 data FillStyle

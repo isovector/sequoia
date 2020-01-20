@@ -400,6 +400,13 @@ renderForm state Form { .. } = withTransform formScaleX formScaleY formTheta for
       mapM_ (renderForm state) forms
       Cairo.restore
 
+    CompositeForm (CompositeStyle alpha) form -> do
+      Cairo.pushGroup
+      renderForm state form
+      Cairo.popGroupToSource
+      Cairo.paintWithAlpha alpha
+
+
 
 unpackColFor :: Color
              -> (Double -> Double ->  Double -> Double -> a)

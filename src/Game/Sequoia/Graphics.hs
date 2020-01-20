@@ -118,6 +118,12 @@ data FormStyle
   | ShapeForm !(Either LineStyle FillStyle) !Shape
   | ElementForm !Element
   | GroupForm !(Maybe Matrix) ![Form]
+  | CompositeForm CompositeStyle Form
+  deriving (Show, Eq, Data)
+
+data CompositeStyle = CompositeStyle
+  { compositeAlpha :: Double
+  }
   deriving (Show, Eq, Data)
 
 deriving instance Data Matrix
@@ -131,6 +137,9 @@ form style = Form
   , formY      = 0
   , formStyle  = style
   }
+
+withAlpha :: Double -> Form -> Form
+withAlpha alpha f = form $ CompositeForm (CompositeStyle alpha) f
 
 fill :: FillStyle -> Shape -> Form
 fill style = form . ShapeForm (Right style)

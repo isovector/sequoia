@@ -21,9 +21,8 @@ module Game.Sequoia
     , rgba
     ) where
 
-import Control.Monad.IO.Class
-import Control.Exception
 import           Control.Applicative
+import           Control.Exception hiding (mask)
 import           Control.Monad (forM_, when)
 import           Data.Array.MArray
 import           Data.Bits ((.|.), (.&.), shift)
@@ -38,7 +37,7 @@ import           Foreign.Ptr (nullPtr, castPtr)
 import           Foreign.Storable (peek)
 import           Game.Sequoia.Color (Color (..), rgb, rgba)
 import           Game.Sequoia.Engine
-import           Game.Sequoia.Graphics
+import           Game.Sequoia.Graphics hiding (form)
 import           Game.Sequoia.Signal
 import           Game.Sequoia.Time
 import           Game.Sequoia.Types
@@ -49,6 +48,7 @@ import qualified Graphics.Rendering.Pango as Pango
 import qualified SDL.Raw as SDL
 import           System.Endian (fromBE32)
 import           System.FilePath.Posix (normalise)
+
 
 data EngineConfig = EngineConfig
   { windowDimensions :: (Int, Int)
@@ -110,6 +110,7 @@ wantsQuit engine sceneSig dimSig = do
 quitGracefully :: Engine -> IO ()
 quitGracefully engine = do
   let w = window engine
+  SDL.closeAudio
   SDL.hideWindow w
   SDL.destroyWindow w
   SDL.quit

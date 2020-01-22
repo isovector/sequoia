@@ -4,10 +4,15 @@ packages:
 #     git: https://github.com/isovector/SG.git
 #     commit: fe733adab45bf6abb1a1a9457f398b96fe643e68
 
-resolver: lts-11.9
+resolver: lts-14.0
 extra-deps:
-    - sdl2-2.3.0
-    - frpnow-0.18
+- sdl2-2.5.0.0
+- '../FRPNow'
+- '../ecstasy'
+- cairo-0.13.6.1
+- pango-0.13.6.1
+- glib-0.13.7.1
+- gtk2hs-buildtools-0.13.5.4
 
 flags: {}
 

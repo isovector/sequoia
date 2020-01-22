@@ -23,6 +23,9 @@ defaultText = Text
 toText :: T.Text -> Text
 toText utf8 = defaultText { textUTF8 = utf8 }
 
+stringText :: String -> Text
+stringText = toText . T.pack
+
 {-| Creates a text element from a string. -}
 plainText :: T.Text -> Element
 plainText utf8 = text $ toText utf8

@@ -17,6 +17,8 @@ defaultText = Text
   , textWeight   = NormalWeight
   , textStyle    = NormalStyle
   , textStroke   = Nothing
+  , textAlignment = LeftAligned
+  , textVAlignment = TopVAligned
   }
 
 {-| Creates a text from a string. -}
@@ -35,12 +37,31 @@ plainText utf8 = text $ toText utf8
 asText :: Show a => a -> Element
 asText val = text $ monospace $ toText $ T.pack $ show val
 
+leftAligned :: Text -> Text
+leftAligned t = t
+  { textAlignment = LeftAligned
+  }
+
+centerAligned :: Text -> Text
+centerAligned t = t
+  { textAlignment = CenterAligned
+  }
+
+topVAligned :: Text -> Text
+topVAligned t = t
+  { textVAlignment = TopVAligned
+  }
+
+centerVAligned :: Text -> Text
+centerVAligned t = t
+  { textVAlignment = CenterVAligned
+  }
+
 {-| Creates an element from a text. -}
 text :: Text -> Element
 text = TextElement
 
 {- TODO:
-centered
 justified
 righted
 underline

@@ -37,7 +37,7 @@ import           Foreign.Ptr (nullPtr, castPtr)
 import           Foreign.Storable (peek)
 import           Game.Sequoia.Color (Color (..), rgb, rgba)
 import           Game.Sequoia.Engine
-import           Game.Sequoia.Graphics hiding (form)
+import           Game.Sequoia.Graphics
 import           Game.Sequoia.Signal
 import           Game.Sequoia.Time
 import           Game.Sequoia.Types
@@ -285,7 +285,16 @@ renderElement _ (TextElement (Text { textColor = (Color r g b a), .. })) = do
 
     Pango.PangoRectangle x y w h <- fmap snd $ Cairo.liftIO $ Pango.layoutGetExtents layout
 
-    Cairo.translate ((-w / 2) -x) ((-h / 2) - y)
+    let centering =
+          case textAlignment of
+            LeftAligned -> 0
+            CenterAligned -> -w / 2
+        vcentering =
+          case textVAlignment of
+            TopVAligned -> 0
+            CenterVAligned -> -h / 2
+
+    Cairo.translate (centering -x) (vcentering - y)
 
     for_ textStroke $ \ls -> do
       Pango.layoutPath layout

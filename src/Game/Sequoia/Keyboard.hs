@@ -1,4 +1,7 @@
+{-# LANGUAGE DeriveAnyClass     #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric      #-}
+{-# LANGUAGE DerivingStrategies #-}
 
 -- See: http://helm-engine.org
 -- Shamelessly stolen from Helm
@@ -6,20 +9,20 @@
 module Game.Sequoia.Keyboard
     ( Key(..)
     , getKeyboard
-    , isDown
-    , keyPress
     , arrows
     , wasd
     , getKeyState
     ) where
 
+import Data.Binary (Binary)
 import Data.Data
-import Control.FRPNow.EvStream
 import Data.List (elemIndices)
 import Foreign hiding (shift)
 import Foreign.C.Types (CInt)
 import Game.Sequoia
 import Game.Sequoia.Utils
+import GHC.Generics (Generic)
+import qualified Data.Set as S
 
 foreign import ccall unsafe "SDL_GetKeyboardState" sdlGetKeyState
     :: Ptr CInt -> IO (Ptr Word8)
@@ -272,7 +275,8 @@ data Key = AKey
          | SleepKey
          | App1Key
          | App2Key
-         deriving (Show, Eq, Ord, Read, Bounded, Data)
+         deriving stock (Show, Eq, Ord, Read, Bounded, Data, Generic)
+         deriving anyclass Binary
 
 instance Enum Key where
     fromEnum AKey = 4
@@ -758,25 +762,19 @@ instance Enum Key where
     toEnum 284 = App2Key
     toEnum x = error $ "Game.Sequoia.Keyboard.Key.toEnum: bad argument " ++ show x
 
-getKeyboard :: N (B [Key])
-getKeyboard = poll . sync $ map toEnum <$> getKeyState
+getKeyboard :: N (B (S.Set Key))
+getKeyboard = poll . sync $ S.fromList . map toEnum <$> getKeyState
 
-keyPress :: B [Key] -> Key -> B (E ())
-keyPress keys = next . edges . isDown keys
-
-isDown :: B [Key] -> Key -> B Bool
-isDown keys k = elem k <$> keys
-
-arrows, wasd :: B [Key] -> B V2
+arrows, wasd :: S.Set Key -> V2
 arrows = liftArrows UpKey LeftKey DownKey RightKey
 wasd   = liftArrows  WKey    AKey    SKey     DKey
 
-liftArrows :: Key -> Key -> Key -> Key -> B [Key] -> B V2
+liftArrows :: Key -> Key -> Key -> Key -> S.Set Key -> V2
 liftArrows uk lk dk rk keys =
-    liftSig <$> isDown keys uk
-            <*> isDown keys lk
-            <*> isDown keys dk
-            <*> isDown keys rk
+    liftSig (S.member uk keys)
+            (S.member lk keys)
+            (S.member dk keys)
+            (S.member rk keys)
   where
     liftSig u l d r = uncurry V2 $ mapT fromIntegral
         (- 1 * fromEnum l + 1 * fromEnum r

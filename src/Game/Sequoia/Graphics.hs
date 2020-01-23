@@ -32,7 +32,17 @@ data Text = Text
   , textWeight   :: !FontWeight
   , textStyle    :: !FontStyle
   , textStroke   :: !(Maybe LineStyle)
+  , textAlignment :: !Alignment
+  , textVAlignment :: !VAlignment
   } deriving (Show, Eq, Data)
+
+data Alignment
+  = LeftAligned | CenterAligned
+  deriving (Eq, Ord, Show, Enum, Bounded, Read, Data)
+
+data VAlignment
+  = TopVAligned | CenterVAligned
+  deriving (Eq, Ord, Show, Enum, Bounded, Read, Data)
 
 data Crop = Crop !Double !Double !Double !Double
   deriving (Show, Eq, Data)

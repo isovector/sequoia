@@ -7,6 +7,7 @@ module Game.Sequoia.Graphics where
 
 import           Data.Data
 import qualified Data.Text as T
+import           Data.Semigroup
 import           Game.Sequoia.Color (Color, black)
 import           Game.Sequoia.Types
 import           Graphics.Rendering.Cairo.Matrix (Matrix (..))
